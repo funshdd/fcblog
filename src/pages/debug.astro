@@ -1,20 +1,5 @@
----
-let runtime = false;
-let hasEnv = false;
-let hasKV = false;
-try {
-  const rt = (Astro.locals as any)?.runtime;
-  runtime = !!rt;
-  if (rt) {
-    hasEnv = !!rt.env;
-    hasKV = !!rt.env?.BLOG_KV;
-  }
-} catch {}
----
 <html>
 <body style="background:#0d1117;color:#f0f6fc;padding:2rem;font-family:sans-serif;">
-<p>runtime: {String(runtime)}</p>
-<p>hasEnv: {String(hasEnv)}</p>
-<p>hasKV: {String(hasKV)}</p>
+<h1>OK</h1>
 </body>
 </html>
