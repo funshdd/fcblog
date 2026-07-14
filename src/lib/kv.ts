@@ -91,10 +91,19 @@ export async function getAllComments(_kv?: KVNamespace | null) {
   return result;
 }
 
+export function bufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let str = '';
+  for (let i = 0; i < bytes.length; i += 1024) {
+    str += String.fromCharCode(...bytes.slice(i, i + 1024));
+  }
+  return btoa(str);
+}
+
 export async function saveCover(_kv: KVNamespace | null, id: string, buffer: ArrayBuffer, mime: string) {
   const kv = _kv || await getKV();
   if (!kv) return `/covers/${id}`;
-  const b64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  const b64 = bufferToBase64(buffer);
   await kv.put(`cover:${id}:data`, b64);
   await kv.put(`cover:${id}:mime`, mime);
   return `/api/cover?id=${id}`;
