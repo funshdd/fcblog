@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+import { getPostList } from '../lib/kv';
+
+const kv = (Astro.locals as any).runtime?.env?.BLOG_KV || null;
+const posts = kv ? await getPostList(kv) : [];
+posts.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+const grouped: Record<string, typeof posts> = {};
+posts.forEach((p: any) => {
+  const year = new Date(p.date).getFullYear().toString();
+  if (!grouped[year]) grouped[year] = [];
+  grouped[year].push(p);
+});
+---
+
+<Base title="归档 - fnet" hideSocial={true}>
+  <h1 style="font-size: 2rem; margin-bottom: 1.5rem; color: #f0f6fc;">归档</h1>
+  {Object.keys(grouped).sort((a, b) => b.localeCompare(a)).map(year => (
+    <div style="margin-bottom: 2rem;">
+      <h2 style="font-size: 1.3rem; color: #58a6ff; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #30363d;">{year}</h2>
+      <div style="display: grid; gap: 0.5rem;">
+        {grouped[year].map((post: any) => (
+          <a href={`/blog/${post.slug}`} style="display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: inherit; padding: 0.5rem 0.75rem; border-radius: 6px; transition: background 0.15s; background: transparent;">
+            <span style="color: #c9d1d9; font-size: 0.95rem;">{post.title}</span>
+            <time style="color: #484f58; font-size: 0.8rem; flex-shrink: 0;">{new Date(post.date).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</time>
+          </a>
+        ))}
+      </div>
+    </div>
+  ))}
+  {posts.length === 0 && <p style="color: #8b949e; text-align: center; padding: 3rem 0;">还没有文章。</p>}
+</Base>
+
+<style>a:hover{background:rgba(22,27,34,0.7)}</style>

@@ -1,0 +1,6 @@
+name = "fnet-blog"
+compatibility_date = "2025-06-01"
+
+[[kv_namespaces]]
+binding = "BLOG_KV"
+id = "08638dcb08fc48ff8a29fcfe227d2dbd"

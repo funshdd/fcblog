@@ -1,0 +1,157 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="地图 - fnet" hideSocial={true}>
+  <h1 style="font-size: 2rem; margin-bottom: 1rem; color: #f0f6fc; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">虚幻与现实的交叉点，一步步还原出世界的真相</h1>
+  <p style="color: #8b949e; margin-bottom: 1rem; font-size: 0.85rem;">点击地图上传照片，每处可传多张</p>
+
+  <div id="map" style="height: 500px; border-radius: 12px; border: 1px solid #30363d; margin-bottom: 1rem;"></div>
+
+  <div id="upload-form" style="display: none; background: rgba(22,27,34,0.5); backdrop-filter: blur(10px); border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;">
+    <h3 id="form-title" style="font-size: 1rem; margin-bottom: 1rem; color: #f0f6fc;">在此位置留下照片</h3>
+    <input type="hidden" id="marker-lat" /><input type="hidden" id="marker-lng" /><input type="hidden" id="marker-id" />
+    <div style="margin-bottom: 0.6rem;"><input type="text" id="marker-title" placeholder="地点名称" maxlength="100" style="width:100%;padding:0.5rem;background:rgba(13,17,23,0.5);color:#c9d1d9;border:1px solid #30363d;border-radius:6px;outline:none;" /></div>
+    <div style="margin-bottom: 0.6rem;"><input type="text" id="marker-uploader" placeholder="上传者" maxlength="30" style="width:100%;padding:0.5rem;background:rgba(13,17,23,0.5);color:#c9d1d9;border:1px solid #30363d;border-radius:6px;outline:none;" /></div>
+    <div style="margin-bottom: 0.6rem;"><input type="date" id="marker-date" style="width:100%;padding:0.5rem;background:rgba(13,17,23,0.5);color:#c9d1d9;border:1px solid #30363d;border-radius:6px;outline:none;" />    </div>
+    <div style="margin-bottom: 0.6rem;"><textarea id="marker-note" placeholder="备注..." maxlength="200" rows="2" style="width:100%;padding:0.5rem;background:rgba(13,17,23,0.5);color:#c9d1d9;border:1px solid #30363d;border-radius:6px;outline:none;resize:vertical;font-family:inherit;"></textarea></div>
+    <div style="margin-bottom: 0.6rem;"><input type="file" id="marker-photo" accept="image/*" style="color:#8b949e;" /></div>
+    <div id="marker-msg" style="font-size:0.85rem;margin-bottom:0.5rem;"></div>
+    <button id="marker-submit" style="padding:0.5rem 1.25rem;background:#238636;color:#fff;border:none;border-radius:6px;cursor:pointer;">上传照片</button>
+    <button id="marker-cancel" style="padding:0.5rem 1.25rem;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;cursor:pointer;margin-left:0.5rem;">取消</button>
+  </div>
+
+  <div id="gallery" style="display:none;background:rgba(22,27,34,0.3);backdrop-filter:blur(10px);border:1px solid #30363d;border-radius:10px;padding:1rem;margin-bottom:1rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+      <h3 id="gallery-title" style="font-size:1rem;color:#f0f6fc;margin:0;"></h3>
+      <div>
+        <button id="gallery-add" style="padding:0.3rem 0.7rem;background:#238636;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.8rem;">添加照片</button>
+        <button id="gallery-close" style="padding:0.3rem 0.7rem;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;cursor:pointer;font-size:0.8rem;margin-left:0.3rem;">关闭</button>
+      </div>
+    </div>
+    <div id="gallery-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.5rem;"></div>
+    <div id="gallery-big" style="display:none;text-align:center;margin-top:0.75rem;">
+      <img id="gallery-big-img" src="" style="max-width:100%;max-height:400px;border-radius:8px;display:block;margin:0 auto 0.5rem;" />
+      <div id="gallery-big-info" style="color:#8b949e;font-size:0.8rem;margin-bottom:0.5rem;"></div>
+      <button id="gallery-back" style="padding:0.3rem 0.7rem;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;cursor:pointer;font-size:0.8rem;">返回列表</button>
+    </div>
+  </div>
+</Base>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+(function() {
+  var map = L.map('map').setView([35,105],4);
+  L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+    subdomains: '1234',
+    attribution: '&copy; 高德地图',
+    maxZoom: 18,
+  }).addTo(map);
+  var form = document.getElementById('upload-form'), gallery = document.getElementById('gallery');
+  var allMarkers = [], allSummaries = [], currentMarkerId = null;
+
+  fetch('/api/map').then(function(r){return r.json()}).then(function(d){allSummaries=d;d.forEach(function(s){addSummaryMarker(s)})});
+
+  function addSummaryMarker(s){
+    var mk = L.marker([s.lat,s.lng]).addTo(map);
+    var tip = s.title + ' (' + s.count + '张)';
+    mk.bindTooltip(tip, { direction: 'top', offset: [0, -10] });
+    if (s.count > 0) {
+      mk.on('mouseover', function() {
+        fetch('/api/map?id=' + s.id).then(function(r){return r.json()}).then(function(m) {
+          if (m && m.photos.length > 0) {
+            mk.unbindTooltip();
+            mk.bindTooltip('<div style="width:120px;text-align:center;"><img src="'+m.photos[0].src+'" style="width:120px;height:80px;object-fit:cover;border-radius:4px;margin-bottom:2px;" /><br/><small>'+s.title+'</small></div>', { direction: 'top', offset: [0, -10], sticky: true });
+            mk.openTooltip();
+          }
+        });
+      });
+      mk.on('mouseout', function() {
+        mk.unbindTooltip();
+        mk.bindTooltip(tip, { direction: 'top', offset: [0, -10] });
+      });
+    }
+    mk.on('click', function() { map.setView([s.lat,s.lng], map.getZoom() < 12 ? 12 : map.getZoom()); loadMarker(s.id); });
+    mk._sid = s.id;
+  }
+
+  function loadMarker(id) {
+    currentMarkerId = id;
+    gallery.style.display = ''; form.style.display = 'none';
+    document.getElementById('gallery-grid').innerHTML = '<p style="color:#8b949e;text-align:center;padding:1rem;">加载中...</p>';
+    fetch('/api/map?id=' + id).then(function(r){return r.json()}).then(function(m){
+      if (!m) return;
+      var idx = allMarkers.findIndex(function(x){return x.id===id});
+      if (idx >= 0) allMarkers[idx] = m; else allMarkers.push(m);
+      document.getElementById('gallery-title').textContent = m.title;
+      renderGrid(m);
+      setTimeout(function() { gallery.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+    });
+  }
+
+  function renderGrid(m){
+    var grid=document.getElementById('gallery-grid'),big=document.getElementById('gallery-big');
+    grid.style.display='';big.style.display='none';
+    grid.innerHTML=m.photos.map(function(p){return '<div style="position:relative;overflow:hidden;border-radius:8px;cursor:pointer;background:#0d1117;" onclick="var bi=document.getElementById(\'gallery-big-img\');bi.src=\''+p.src+'\';bi.style.maxHeight=\'none\';document.getElementById(\'gallery-big-info\').innerHTML=\'<b>\'+p.note+\'</b><br/>\'+p.uploader+\' · \'+p.date.substring(0,10)+\'\';document.getElementById(\'gallery-grid\').style.display=\'none\';document.getElementById(\'gallery-big\').style.display=\'\';"><img src="'+p.src+'" style="width:100%;display:block;" loading="lazy" /><div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.7),transparent);padding:2rem 0.5rem 0.5rem;">'+(p.note?'<div style="color:#fff;font-size:1rem;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.6);margin-bottom:0.2rem;">'+p.note+'</div>':'')+'<div style="display:flex;align-items:center;gap:0.4rem;"><span style="color:rgba(255,255,255,0.85);font-size:0.85rem;text-shadow:0 1px 3px rgba(0,0,0,0.6);">「'+p.uploader+'」</span><span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">'+p.date.substring(0,10)+'</span></div></div></div>'}).join('');
+  }
+
+  document.getElementById('gallery-back').addEventListener('click',function(){
+    document.getElementById('gallery-grid').style.display='';document.getElementById('gallery-big').style.display='none';
+  });
+  document.getElementById('gallery-close').addEventListener('click',function(){gallery.style.display='none';currentMarkerId=null});
+  document.getElementById('gallery-add').addEventListener('click',function(){
+    if(!currentMarkerId)return;
+    var m = allMarkers.find(function(x){return x.id===currentMarkerId});
+    if(!m)return;
+    document.getElementById('marker-id').value=currentMarkerId;
+    document.getElementById('marker-lat').value=m.lat;document.getElementById('marker-lng').value=m.lng;
+    document.getElementById('marker-title').value='';document.getElementById('marker-uploader').value='';
+    document.getElementById('marker-note').value='';document.getElementById('form-title').textContent='添加照片到: '+m.title;
+    document.getElementById('marker-photo').value='';document.getElementById('marker-msg').innerHTML='';
+    form.style.display='';gallery.style.display='none';
+  });
+
+  map.on('click',function(e){
+    gallery.style.display='none';form.style.display='';
+    document.getElementById('marker-id').value='';document.getElementById('marker-lat').value=e.latlng.lat.toFixed(6);
+    document.getElementById('marker-lng').value=e.latlng.lng.toFixed(6);
+    document.getElementById('marker-title').value='';document.getElementById('marker-uploader').value='';
+    document.getElementById('marker-note').value='';document.getElementById('marker-date').value='';
+    document.getElementById('form-title').textContent='在此位置留下照片';
+    document.getElementById('marker-photo').value='';document.getElementById('marker-msg').innerHTML='';
+  });
+
+  document.getElementById('marker-cancel').addEventListener('click',function(){form.style.display='none'});
+
+  document.getElementById('marker-submit').addEventListener('click',async function(){
+    var lat=document.getElementById('marker-lat').value,lng=document.getElementById('marker-lng').value;
+    var title=document.getElementById('marker-title').value.trim(),uploader=document.getElementById('marker-uploader').value.trim();
+    var note=document.getElementById('marker-note').value.trim(),customDate=document.getElementById('marker-date').value;
+    var markerId=document.getElementById('marker-id').value;
+    var file=document.getElementById('marker-photo').files[0],msg=document.getElementById('marker-msg');
+    if(!file){msg.innerHTML='<span style="color:#f85149;">请选择照片</span>';return}
+    var fd=new FormData();fd.append('lat',lat);fd.append('lng',lng);fd.append('title',title||'照片');
+    fd.append('uploader',uploader);fd.append('note',note);fd.append('photo',file);
+    if(customDate)fd.append('date',customDate);
+    if(markerId)fd.append('markerId',markerId);
+    try{
+      var res=await fetch('/api/map',{method:'POST',body:fd});
+      if(res.ok){var r=await res.json();var idx=allMarkers.findIndex(function(m){return m.id===(markerId||r.marker.id)});
+        if(idx>=0)allMarkers[idx]=r.marker;else allMarkers.push(r.marker);
+        map.eachLayer(function(l){if(l._sid&&l._sid===r.marker.id)map.removeLayer(l)});
+        var s={id:r.marker.id,lat:r.marker.lat,lng:r.marker.lng,title:r.marker.title,count:r.marker.photos.length};
+        var si=allSummaries.findIndex(function(x){return x.id===s.id});if(si>=0)allSummaries[si]=s;else allSummaries.push(s);
+        addSummaryMarker(s);form.style.display='none';document.getElementById('marker-photo').value='';
+        gallery.style.display='';document.getElementById('gallery-title').textContent=r.marker.title;renderGrid(r.marker);
+      }else{var e=await res.json();msg.innerHTML='<span style="color:#f85149;">'+(e.error||'失败')+'</span>'}
+    }catch(err){msg.innerHTML='<span style="color:#f85149;">网络错误</span>'}
+  });
+})();
+</script>
+
+<style>
+  .leaflet-popup-content-wrapper{background:#161b22;color:#c9d1d9;border-radius:8px}
+  .leaflet-popup-tip{background:#161b22}
+</style>

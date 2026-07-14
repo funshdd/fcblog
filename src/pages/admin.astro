@@ -1,0 +1,804 @@
+---
+const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>管理后台 - fnet</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+    }
+    .admin-header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 0.6rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .admin-header h1 { font-size: 1rem; color: #f0f6fc; }
+    .admin-header a { color: #8b949e; text-decoration: none; font-size: 0.85rem; }
+    .admin-header a:hover { color: #f0f6fc; }
+    .layout { display: flex; height: calc(100vh - 42px); }
+    .left-panel {
+      width: 280px;
+      flex-shrink: 0;
+      background: #161b22;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-tabs {
+      display: flex;
+      border-bottom: 1px solid #30363d;
+    }
+    .panel-tab {
+      flex: 1;
+      padding: 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #8b949e;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-family: inherit;
+    }
+    .panel-tab:hover { color: #f0f6fc; }
+    .panel-tab.active { color: #f0f6fc; border-bottom-color: #f78166; }
+    .panel-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+    .panel-list .post-item {
+      padding: 0.5rem 0.7rem;
+      cursor: pointer;
+      border-radius: 6px;
+      margin-bottom: 0.25rem;
+      border: 1px solid transparent;
+      transition: background 0.1s;
+    }
+    .panel-list .post-item:hover { background: #1c2128; }
+    .panel-list .post-item.active { background: #1c2128; border-color: #30363d; }
+    .panel-list .post-item h4 { font-size: 0.95rem; color: #c9d1d9; margin-bottom: 0; }
+    .panel-list .post-item .meta { font-size: 0.72rem; color: #484f58; margin-top: 0; }
+    .panel-list .post-item .actions { margin-top: 0.3rem; display: flex; gap: 0.3rem; }
+    .panel-list .post-item .actions button { font-size: 0.7rem; padding: 0.15rem 0.5rem; background: none; border: 1px solid #30363d; color: #8b949e; border-radius: 4px; cursor: pointer; font-family: inherit; }
+    .panel-list .post-item .actions button:hover { color: #f0f6fc; }
+    .panel-list .post-item .actions button.danger:hover { color: #f85149; border-color: #f85149; }
+
+    .right-panel {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .editor-col {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+    .preview-col {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      border-left: 1px solid #30363d;
+      background: #0d1117;
+      min-width: 0;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 0.25rem; }
+    label { font-weight: 600; font-size: 0.85rem; color: #c9d1d9; }
+    input, textarea {
+      padding: 0.55rem 0.7rem;
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: #1f6feb; }
+    textarea { min-height: 280px; resize: vertical; line-height: 1.7; font-family: "SF Mono", Monaco, "Cascadia Code", monospace; font-size: 0.88rem; }
+    button.btn {
+      padding: 0.5rem 1rem;
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button.btn:hover { background: #2ea043; }
+    button.btn-secondary {
+      background: #21262d;
+      border: 1px solid #30363d;
+      margin-left: 0.5rem;
+    }
+    button.btn-secondary:hover { background: #30363d; }
+    button.btn-new {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    .msg { font-size: 0.85rem; }
+    .msg.error { color: #f85149; }
+    .msg.success { color: #3fb950; }
+    .preview-content { line-height: 1.9; color: #c9d1d9; }
+    .preview-content h1,.preview-content h2,.preview-content h3 { color: #f0f6fc; }
+    .preview-content a { color: #58a6ff; }
+    .preview-content code { background: #21262d; padding: 0.15em 0.35em; border-radius: 4px; font-size: 0.9em; }
+    .preview-content pre { background: #161b22; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+    .preview-content pre code { background: none; padding: 0; }
+    .preview-content blockquote { border-left: 3px solid #58a6ff; margin: 0; padding: 0.4rem 1rem; color: #8b949e; }
+    .preview-content img { max-width: 100%; }
+    .preview-content ul,.preview-content ol { padding-left: 1.5rem; }
+    .empty-state { color: #484f58; text-align: center; padding: 2rem 0; }
+    .comment-card {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 0.7rem;
+      margin-bottom: 0.5rem;
+    }
+    .comment-card .c-meta { font-size: 0.72rem; color: #484f58; margin-bottom: 0.25rem; display: flex; justify-content: space-between; }
+    .comment-card .c-body { font-size: 0.85rem; color: #8b949e; white-space: pre-wrap; }
+    @media (max-width: 760px) {
+      .layout { flex-direction: column; height: auto; }
+      .left-panel { width: 100%; max-height: 200px; border-right: none; border-bottom: 1px solid #30363d; }
+      .right-panel { flex-direction: column; }
+      .preview-col { border-left: none; border-top: 1px solid #30363d; }
+    }
+  </style>
+</head>
+<body>
+  {!isLoggedIn ? (
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+      <div style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 400px;">
+        <h1 style="font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; color: #f0f6fc;">管理后台</h1>
+        <form method="POST" action="/api/auth">
+          <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" name="username" required />
+          </div>
+          <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+          <div class="msg error" id="login-error">&nbsp;</div>
+          <button type="submit" class="btn" style="width: 100%;">登录</button>
+        </form>
+        <a href="/" style="display: block; text-align: center; margin-top: 1rem; color: #8b949e; text-decoration: none; font-size: 0.9rem;">&larr; 返回首页</a>
+      </div>
+    </div>
+  ) : (
+    <>
+      <div class="admin-header">
+        <h1>管理后台</h1>
+        <div>
+          <a href="/">首页</a>
+          <span style="color: #30363d; margin: 0 0.5rem;">|</span>
+          <form action="/api/auth" method="POST" style="display: inline;">
+            <input type="hidden" name="action" value="logout" />
+            <a href="#" onclick="this.closest('form').submit(); return false;">退出</a>
+          </form>
+        </div>
+      </div>
+      <div class="layout">
+        <div class="left-panel">
+          <div class="panel-tabs">
+            <button class="panel-tab active" data-list="posts">文章</button>
+            <button class="panel-tab" data-list="comments">评论</button>
+            <button class="panel-tab" data-list="downloads">下载</button>
+            <button class="panel-tab" data-list="music">音乐</button>
+            <button class="panel-tab" data-list="map">地图</button>
+          </div>
+          <div class="panel-list" id="panel-posts">
+            <button class="btn btn-new" id="btn-new-post">+ 新建文章</button>
+            <div id="post-sidelist"><p class="empty-state">加载中...</p></div>
+          </div>
+          <div class="panel-list" id="panel-comments" style="display: none;">
+            <div id="comment-sidelist"><p class="empty-state">加载中...</p></div>
+          </div>
+          <div class="panel-list" id="panel-downloads" style="display: none;">
+            <button class="btn btn-new" id="btn-new-dl">+ 上传文件</button>
+            <div id="download-sidelist"><p class="empty-state">加载中...</p></div>
+            <div id="dl-form" style="display: none; padding: 0.5rem;">
+              <div class="form-group">
+                <label>名称</label>
+                <input type="text" id="dl-name" placeholder="软件名称" />
+              </div>
+              <div class="form-group">
+                <label>描述</label>
+                <input type="text" id="dl-desc" placeholder="简短描述（可选）" />
+              </div>
+              <div class="form-group">
+                <label>文件</label>
+                <input type="file" id="dl-file" />
+              </div>
+              <div id="dl-msg" class="msg"></div>
+              <button class="btn" id="btn-dl-submit">上传</button>
+              <button class="btn btn-secondary" id="btn-dl-cancel" style="margin: 0;">取消</button>
+            </div>
+          </div>
+          <div class="panel-list" id="panel-music" style="display: none;">
+            <button class="btn btn-new" id="btn-new-music">+ 上传音乐</button>
+            <div id="music-sidelist"><p class="empty-state">加载中...</p></div>
+            <div id="music-edit" style="display: none; padding: 0.5rem;">
+              <div class="form-group"><label>文件名</label><input type="text" id="music-edit-filename" readonly style="opacity: 0.6;" /></div>
+              <div class="form-group"><label>显示名称</label><input type="text" id="music-edit-name" /></div>
+              <div class="form-group"><label>艺术家</label><input type="text" id="music-edit-artist" /></div>
+              <div class="form-group"><label>封面URL</label><input type="text" id="music-edit-cover" /></div>
+              <div id="music-edit-msg" class="msg"></div>
+              <button class="btn" id="btn-music-save">保存</button>
+              <button class="btn btn-secondary" id="btn-music-edit-cancel" style="margin: 0;">取消</button>
+            </div>
+            <div id="music-form" style="display: none; padding: 0.5rem;">
+              <div class="form-group">
+                <label>文件</label>
+                <input type="file" id="music-file" accept="audio/*" />
+              </div>
+              <div id="music-msg" class="msg"></div>
+              <button class="btn" id="btn-music-submit">上传</button>
+              <button class="btn btn-secondary" id="btn-music-cancel" style="margin: 0;">取消</button>
+            </div>
+          </div>
+        </div>
+        <div class="right-panel">
+          <div class="editor-col">
+            <input type="hidden" id="edit-filename" value="" />
+            <input type="hidden" id="edit-slug" value="" />
+        <div class="form-group">
+          <label for="post-title">标题</label>
+          <input type="text" id="post-title" required placeholder="文章标题" />
+        </div>
+        <div class="form-group">
+          <label for="post-date">发布日期</label>
+          <input type="date" id="post-date" />
+        </div>
+        <div class="form-group">
+          <label for="post-desc">描述</label>
+          <input type="text" id="post-desc" placeholder="简短描述（可选）" />
+        </div>
+        <div class="form-group">
+          <label for="post-author">上传者</label>
+          <input type="text" id="post-author" placeholder="funsh" />
+        </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <div class="form-group" style="flex: 1;">
+                <label for="post-tags">标签</label>
+                <input type="text" id="post-tags" placeholder="逗号分隔（可选）" />
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="post-cover">封面URL</label>
+                <div style="display: flex; gap: 0.3rem;">
+                  <input type="text" id="post-cover" placeholder="https://..." style="flex: 1;" />
+                  <button type="button" class="btn btn-secondary" id="btn-upload" style="margin: 0; font-size: 0.75rem; padding: 0 0.5rem;">上传</button>
+          </div>
+          <div class="panel-list" id="panel-map" style="display: none;">
+            <div id="map-sidelist"><p class="empty-state">加载中...</p></div>
+          </div>
+                <input type="file" id="cover-file" accept="image/*" style="display: none;" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="post-content">内容（Markdown）</label>
+              <textarea id="post-content" required placeholder="在此编写 Markdown 内容..."></textarea>
+            </div>
+            <div id="publish-msg" class="msg"></div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn" id="btn-publish">发布文章</button>
+              <button class="btn" id="btn-delete" style="display: none; background: #da3633; color: #fff; margin: 0;">删除文章</button>
+            </div>
+          </div>
+          <div class="preview-col" id="preview-col">
+            <div class="preview-content" id="preview-content">
+              <p style="color: #484f58;">预览区域</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  )}
+</body>
+</html>
+
+  <script>
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('error') === '1') {
+        var errEl = document.getElementById('login-error');
+        if (errEl) { errEl.textContent = '用户名或密码错误'; errEl.className = 'msg error'; }
+      }
+      const btnNew = document.getElementById('btn-new-post');
+      if (!btnNew) return;
+
+  const titleInput = document.getElementById('post-title');
+  const dateInput = document.getElementById('post-date');
+  const descInput = document.getElementById('post-desc');
+  const authorInput = document.getElementById('post-author');
+  const tagsInput = document.getElementById('post-tags');
+  const coverInput = document.getElementById('post-cover');
+  const contentInput = document.getElementById('post-content');
+  const filenameInput = document.getElementById('edit-filename');
+  const slugInput = document.getElementById('edit-slug');
+  const btnPublish = document.getElementById('btn-publish');
+  const btnDelete = document.getElementById('btn-delete');
+  const msg = document.getElementById('publish-msg');
+  const previewDiv = document.getElementById('preview-content');
+  const postSidelist = document.getElementById('post-sidelist');
+  const commentSidelist = document.getElementById('comment-sidelist');
+
+  let timer;
+
+  contentInput.addEventListener('input', () => {
+    clearTimeout(timer);
+    const md = contentInput.value;
+    if (!md.trim()) { previewDiv.innerHTML = '<p style="color: #484f58;">预览区域</p>'; return; }
+    timer = setTimeout(() => {
+      previewDiv.innerHTML = '<p style="color: #484f58;">渲染中...</p>';
+      fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: md }) })
+        .then(r => r.text())
+        .then(html => { previewDiv.innerHTML = html; })
+        .catch(() => { previewDiv.innerHTML = '<p style="color: #f85149;">预览失败</p>'; });
+    }, 500);
+  });
+
+  document.querySelectorAll('.panel-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const list = tab.dataset.list;
+      document.getElementById('panel-posts').style.display = list === 'posts' ? '' : 'none';
+      document.getElementById('panel-comments').style.display = list === 'comments' ? '' : 'none';
+      document.getElementById('panel-downloads').style.display = list === 'downloads' ? '' : 'none';
+      document.getElementById('panel-music').style.display = list === 'music' ? '' : 'none';
+      document.getElementById('panel-map').style.display = list === 'map' ? '' : 'none';
+      if (list === 'posts') loadPosts();
+      if (list === 'comments') loadComments();
+      if (list === 'downloads') loadDownloads();
+      if (list === 'music') loadMusic();
+      if (list === 'map') loadMapAdmin();
+    });
+  });
+
+  btnNew.addEventListener('click', () => { clearEditor(); highlightActive(null); });
+
+  function clearEditor() {
+    filenameInput.value = '';
+    slugInput.value = '';
+    titleInput.value = '';
+    dateInput.value = '';
+    descInput.value = '';
+    authorInput.value = '';
+    tagsInput.value = '';
+    coverInput.value = '';
+    contentInput.value = '';
+    btnPublish.textContent = '发布文章';
+    btnDelete.style.display = 'none';
+    msg.innerHTML = '';
+    previewDiv.innerHTML = '<p style="color: #484f58;">预览区域</p>';
+  }
+
+  function highlightActive(filename) {
+    document.querySelectorAll('.post-item').forEach(el => el.classList.remove('active'));
+    if (filename) {
+      const active = document.querySelector('[data-filename="' + filename + '"]');
+      if (active) active.classList.add('active');
+    }
+  }
+
+  async function loadPosts() {
+    try {
+      const res = await fetch('/api/posts');
+      if (!res.ok) throw new Error();
+      const posts = await res.json();
+      if (!posts.length) { postSidelist.innerHTML = '<p class="empty-state">暂无文章</p>'; return; }
+      postSidelist.innerHTML = '';
+      posts.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'post-item';
+        div.dataset.filename = p.filename;
+        div.innerHTML = `
+          <h4>${esc(p.title)}</h4>
+          <div class="meta">funsh · ${esc(p.date)}</div>
+        `;
+        div.addEventListener('click', () => {
+          editPost(p.filename, p.title, p.description || '', p.slug, p.content, p.cover || '', p.tags || '', p.author || '', p.date);
+        });
+        postSidelist.appendChild(div);
+      });
+    } catch (e) { postSidelist.innerHTML = '<p class="msg error">加载失败</p>'; }
+  }
+
+  function editPost(filename, title, desc, slug, content, cover, tags, author, postDate) {
+    filenameInput.value = filename;
+    slugInput.value = slug;
+    titleInput.value = title;
+    dateInput.value = postDate || '';
+    descInput.value = desc;
+    authorInput.value = author || '';
+    tagsInput.value = tags || '';
+    coverInput.value = cover || '';
+    contentInput.value = content;
+    btnPublish.textContent = '更新文章';
+    btnDelete.style.display = 'inline';
+    highlightActive(filename);
+    contentInput.dispatchEvent(new Event('input'));
+  }
+
+  btnPublish.addEventListener('click', async () => {
+    const title = titleInput.value.trim();
+    const description = descInput.value.trim();
+    const tags = tagsInput.value.trim();
+    const cover = coverInput.value.trim();
+    const author = authorInput.value.trim();
+    const postDate = dateInput.value;
+    const content = contentInput.value.trim();
+    const filename = filenameInput.value;
+    const slug = slugInput.value;
+    if (!title || !content) { msg.innerHTML = '<span class="error">请填写标题和内容</span>'; return; }
+    btnPublish.disabled = true;
+    const isEdit = !!filename;
+    const method = isEdit ? 'PUT' : 'POST';
+    const body = { title, description, content, cover, tags, author, date: postDate };
+    if (isEdit) { body.filename = filename; body.slug = slug; }
+    try {
+      const res = await fetch('/api/posts', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const result = await res.json();
+      if (res.ok) {
+        msg.innerHTML = '<span class="success">' + (isEdit ? '更新成功！' : '发布成功！') + '</span>';
+        if (isEdit) { clearEditor(); loadPosts(); } else { clearEditor(); loadPosts(); }
+        setTimeout(() => { msg.innerHTML = ''; }, 3000);
+      } else { msg.innerHTML = '<span class="error">' + esc(result.error || '操作失败') + '</span>'; }
+    } catch (e) { msg.innerHTML = '<span class="error">网络错误</span>'; }
+    btnPublish.disabled = false;
+  });
+
+  btnDelete.addEventListener('click', async () => {
+    const filename = filenameInput.value;
+    if (!filename) return;
+    if (!confirm('确定删除这篇文章？此操作不可撤销。')) return;
+    try {
+      const r = await fetch('/api/posts', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename }) });
+      if (r.ok) {
+        clearEditor();
+        loadPosts();
+        highlightActive(null);
+        msg.innerHTML = '<span class="success">已删除</span>';
+        setTimeout(() => { msg.innerHTML = ''; }, 3000);
+      } else { alert('删除失败'); }
+    } catch (e) { alert('网络错误'); }
+  });
+
+  async function loadComments() {
+    try {
+      const res = await fetch('/api/comments?all=1');
+      if (!res.ok) throw new Error();
+      const all = await res.json();
+      if (!all.length) { commentSidelist.innerHTML = '<p class="empty-state">暂无评论</p>'; return; }
+      commentSidelist.innerHTML = '';
+      all.forEach(entry => {
+        entry.comments.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'comment-card';
+          div.innerHTML = `
+            <div class="c-meta"><strong>${esc(c.name)}</strong><span>${new Date(c.date).toLocaleDateString('zh-CN')}</span></div>
+            <div class="c-body">${esc(c.content)}</div>
+            <div style="text-align: right; margin-top: 0.3rem;"><small style="color: #8b949e;">文章: ${esc(entry.slug)}</small> <button class="del-cmt" style="background: none; border: 1px solid #30363d; color: #f85149; border-radius: 3px; cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.4rem;">删除</button></div>
+          `;
+          div.querySelector('.del-cmt').addEventListener('click', async () => {
+            if (!confirm('确定删除？')) return;
+            try {
+              const r = await fetch('/api/comments', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: entry.slug, id: c.id }) });
+              if (r.ok) loadComments(); else alert('失败');
+            } catch (e) { alert('网络错误'); }
+          });
+          commentSidelist.appendChild(div);
+        });
+      });
+    } catch (e) { commentSidelist.innerHTML = '<p class="msg error">加载失败</p>'; }
+  }
+
+  document.getElementById('btn-upload').addEventListener('click', () => { document.getElementById('cover-file').click(); });
+  document.getElementById('cover-file').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const r = await res.json();
+      if (res.ok) coverInput.value = r.url; else alert(r.error || '失败');
+    } catch (e) { alert('网络错误'); }
+  });
+
+  function esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function formatSize(bytes: number) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  async function loadDownloads() {
+    const list = document.getElementById('download-sidelist');
+    try {
+      const res = await fetch('/api/downloads?all=1');
+      const data = await res.json();
+      if (!data.length) { list.innerHTML = '<p class="empty-state">暂无文件</p>'; return; }
+      list.innerHTML = data.map((d: any) => `
+        <div class="post-item">
+          <h4>${esc(d.name)}</h4>
+          <div class="meta">${formatSize(d.size)} · ${esc(d.date.substring(0, 10))}</div>
+          <div class="actions"><button class="danger del-dl" data-id="${esc(d.id)}">删除</button></div>
+        </div>
+      `).join('');
+      list.querySelectorAll('.del-dl').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('确定删除？')) return;
+          try {
+            const r = await fetch('/api/downloads', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: btn.dataset.id }) });
+            if (r.ok) loadDownloads(); else alert('失败');
+          } catch (e) { alert('网络错误'); }
+        });
+      });
+    } catch (e) { list.innerHTML = '<p class="msg error">加载失败</p>'; }
+  }
+
+  document.getElementById('btn-new-dl').addEventListener('click', () => {
+    document.getElementById('dl-form').style.display = 'block';
+  });
+  document.getElementById('btn-dl-cancel').addEventListener('click', () => {
+    document.getElementById('dl-form').style.display = 'none';
+    document.getElementById('dl-name').value = '';
+    document.getElementById('dl-desc').value = '';
+    document.getElementById('dl-file').value = '';
+  });
+  document.getElementById('btn-dl-submit').addEventListener('click', async () => {
+    const name = document.getElementById('dl-name').value.trim();
+    const desc = document.getElementById('dl-desc').value.trim();
+    const file = document.getElementById('dl-file').files?.[0];
+    const msg = document.getElementById('dl-msg');
+    if (!name || !file) { msg.innerHTML = '<span class="error">请填写名称并选择文件</span>'; return; }
+    const fd = new FormData();
+    fd.append('name', name); fd.append('description', desc); fd.append('file', file);
+    try {
+      const res = await fetch('/api/downloads', { method: 'POST', body: fd });
+      if (res.ok) {
+        document.getElementById('dl-form').style.display = 'none';
+        document.getElementById('dl-name').value = '';
+        document.getElementById('dl-desc').value = '';
+        document.getElementById('dl-file').value = '';
+        loadDownloads();
+      } else {
+        const r = await res.json();
+        msg.innerHTML = '<span class="error">' + esc(r.error || '失败') + '</span>';
+      }
+    } catch (e) { msg.innerHTML = '<span class="error">网络错误</span>'; }
+  });
+
+  async function loadMusic() {
+    const list = document.getElementById('music-sidelist');
+    try {
+      const res = await fetch('/api/music');
+      const data = await res.json();
+      if (!data.length) { list.innerHTML = '<p class="empty-state">暂无音乐</p>'; return; }
+      list.innerHTML = data.map((m: any) => `
+        <div class="post-item" style="cursor: pointer;">
+          <h4>${esc(m.name || m.filename)}</h4>
+          <div class="meta">${m.artist || ''} · ${formatSize(m.size)}</div>
+          <div class="actions">
+            <button class="edit-music" data-filename="${esc(m.filename)}" data-name="${esc(m.name || '')}" data-artist="${esc(m.artist || '')}" data-cover="${esc(m.cover || '')}">编辑</button>
+            <button class="danger del-music" data-name="${esc(m.filename)}">删除</button>
+          </div>
+        </div>
+      `).join('');
+      list.querySelectorAll('.del-music').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('确定删除？')) return;
+          try {
+            const r = await fetch('/api/music', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: btn.dataset.name }) });
+            if (r.ok) loadMusic(); else alert('失败');
+          } catch (e) { alert('网络错误'); }
+        });
+      });
+      list.querySelectorAll('.edit-music, .post-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target.classList.contains('del-music')) return;
+          const item = el.closest('.post-item') || el;
+          const btn = item.querySelector('.edit-music');
+          if (!btn) return;
+          document.getElementById('music-sidelist').style.display = 'none';
+          document.getElementById('btn-new-music').style.display = 'none';
+          document.getElementById('music-edit').style.display = 'block';
+          document.getElementById('music-form').style.display = 'none';
+          document.getElementById('music-edit-filename').value = btn.dataset.filename;
+          document.getElementById('music-edit-name').value = btn.dataset.name;
+          document.getElementById('music-edit-artist').value = btn.dataset.artist;
+          document.getElementById('music-edit-cover').value = btn.dataset.cover;
+        });
+      });
+    } catch (e) { list.innerHTML = '<p class="msg error">加载失败</p>'; }
+  }
+
+  document.getElementById('btn-new-music').addEventListener('click', () => {
+    document.getElementById('music-form').style.display = 'block';
+  });
+  document.getElementById('btn-music-cancel').addEventListener('click', () => {
+    document.getElementById('music-form').style.display = 'none';
+    document.getElementById('music-file').value = '';
+  });
+  document.getElementById('btn-music-submit').addEventListener('click', async () => {
+    const file = document.getElementById('music-file').files?.[0];
+    const msg = document.getElementById('music-msg');
+    if (!file) { msg.innerHTML = '<span class="error">请选择文件</span>'; return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/music', { method: 'POST', body: fd });
+      if (res.ok) {
+        document.getElementById('music-form').style.display = 'none';
+        document.getElementById('music-file').value = '';
+        loadMusic();
+      } else {
+        const r = await res.json();
+        msg.innerHTML = '<span class="error">' + esc(r.error || '失败') + '</span>';
+      }
+    } catch (e) { msg.innerHTML = '<span class="error">网络错误</span>'; }
+  });
+
+  document.getElementById('btn-music-save').addEventListener('click', async () => {
+    const filename = document.getElementById('music-edit-filename').value;
+    const name = document.getElementById('music-edit-name').value.trim();
+    const artist = document.getElementById('music-edit-artist').value.trim();
+    const cover = document.getElementById('music-edit-cover').value.trim();
+    const msg = document.getElementById('music-edit-msg');
+    try {
+      const res = await fetch('/api/music', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, name, artist, cover }) });
+      if (res.ok) {
+        cancelMusicEdit();
+        loadMusic();
+      } else { msg.innerHTML = '<span class="error">保存失败</span>'; }
+    } catch (e) { msg.innerHTML = '<span class="error">网络错误</span>'; }
+  });
+
+  document.getElementById('btn-music-edit-cancel').addEventListener('click', cancelMusicEdit);
+
+  function cancelMusicEdit() {
+    document.getElementById('music-sidelist').style.display = '';
+    document.getElementById('btn-new-music').style.display = '';
+    document.getElementById('music-edit').style.display = 'none';
+    document.getElementById('music-form').style.display = 'none';
+  }
+
+  async function loadMapAdmin() {
+    const list = document.getElementById('map-sidelist');
+    try {
+      const res = await fetch('/api/map');
+      const summaries = await res.json();
+      if (!summaries.length) { list.innerHTML = '<p class="empty-state">暂无标记</p>'; return; }
+      list.innerHTML = '';
+      summaries.forEach((s: any) => {
+        const div = document.createElement('div');
+        div.className = 'post-item';
+        div.style.cursor = 'default';
+        div.innerHTML = `
+          <h4>${esc(s.title || '无标题')}</h4>
+          <div class="meta">${s.count} 张照片</div>
+          <div class="actions">
+            <button class="view-map-marker" data-id="${esc(s.id)}">查看详情</button>
+            <button class="danger del-map" data-id="${esc(s.id)}">删除标记</button>
+          </div>
+          <div class="map-photos-detail" data-id="${esc(s.id)}" style="display:none;margin-top:0.5rem;"></div>
+        `;
+        list.appendChild(div);
+
+        div.querySelector('.view-map-marker').addEventListener('click', async function() {
+          const detail = div.querySelector('.map-photos-detail');
+          if (detail.style.display === 'none') {
+            detail.style.display = '';
+            detail.innerHTML = '<p style="color:#484f58;font-size:0.8rem;">加载中...</p>';
+            try {
+              const r = await fetch('/api/map?id=' + s.id);
+              const m = await r.json();
+              if (!m) return;
+              detail.innerHTML = m.photos.map((p: any) => `
+                <div style="display:flex;gap:0.5rem;padding:0.4rem 0;border-top:1px solid #21262d;align-items:center;" class="photo-row" data-marker="${esc(s.id)}" data-photo="${esc(p.id)}">
+                  <img src="${esc(p.src)}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0;" />
+                  <div style="flex:1;min-width:0;" class="photo-info">
+                    <div style="font-size:0.8rem;color:#c9d1d9;">${esc(p.note || '无备注')}</div>
+                    <div style="font-size:0.7rem;color:#484f58;">${esc(p.uploader)} · ${p.date.substring(0, 10)}</div>
+                  </div>
+                  <div class="photo-edit" style="display:none;flex:1;min-width:0;">
+                    <input class="edit-note" value="${esc(p.note||'')}" placeholder="备注" style="width:100%;padding:0.2rem 0.3rem;margin-bottom:0.15rem;font-size:0.75rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;" />
+                    <input class="edit-uploader" value="${esc(p.uploader||'')}" placeholder="上传者" style="width:100%;padding:0.2rem 0.3rem;margin-bottom:0.15rem;font-size:0.75rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;" />
+                    <input type="date" class="edit-date" value="${p.date.substring(0,10)}" style="width:100%;padding:0.2rem 0.3rem;font-size:0.75rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;" />
+                  </div>
+                  <button class="edit-map-photo" data-marker="${esc(s.id)}" data-photo="${esc(p.id)}" style="font-size:0.65rem;padding:0.1rem 0.4rem;background:none;border:1px solid #30363d;color:#8b949e;border-radius:3px;cursor:pointer;">编辑</button>
+                  <button class="danger del-map-photo" data-marker="${esc(s.id)}" data-photo="${esc(p.id)}" style="font-size:0.65rem;padding:0.1rem 0.4rem;background:none;border:1px solid #30363d;color:#f85149;border-radius:3px;cursor:pointer;">删除</button>
+                </div>
+              `).join('');
+              detail.querySelectorAll('.edit-map-photo').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  var row = btn.closest('.photo-row');
+                  var info = row.querySelector('.photo-info');
+                  var edit = row.querySelector('.photo-edit');
+                  if (edit.style.display === 'none') {
+                    info.style.display = 'none';
+                    edit.style.display = '';
+                    btn.textContent = '保存';
+                    btn.style.color = '#3fb950';
+                  } else {
+                    var mId = btn.dataset.marker;
+                    var pId = btn.dataset.photo;
+                    var note = row.querySelector('.edit-note').value;
+                    var uploader = row.querySelector('.edit-uploader').value;
+                    var date = row.querySelector('.edit-date').value;
+                    fetch('/api/map', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markerId: mId, photoId: pId, note, uploader, date }) })
+                      .then(function(r) { return r.json(); })
+                      .then(function(r) {
+                        if (r.success) {
+                          info.querySelector('div:first-child').textContent = note || '无备注';
+                          info.querySelector('div:last-child').textContent = uploader + ' · ' + date;
+                          info.style.display = '';
+                          edit.style.display = 'none';
+                          btn.textContent = '编辑';
+                          btn.style.color = '#8b949e';
+                        } else { alert('保存失败'); }
+                      });
+                  }
+                });
+              });
+              detail.querySelectorAll('.del-map-photo').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                  e.stopPropagation();
+                  if (!confirm('确定删除这张照片？')) return;
+                  try {
+                    const r = await fetch('/api/map', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markerId: btn.dataset.marker, photoId: btn.dataset.photo }) });
+                    if (r.ok) { loadMapAdmin(); } else { alert('失败'); }
+                  } catch (e) { alert('网络错误'); }
+                });
+              });
+            } catch (e) { detail.innerHTML = '<p style="color:#f85149;">加载失败</p>'; }
+          } else {
+            detail.style.display = 'none';
+          }
+        });
+
+        div.querySelector('.del-map').addEventListener('click', async () => {
+          if (!confirm('确定删除这个标记及其所有照片？')) return;
+          try {
+            const r = await fetch('/api/map', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markerId: s.id }) });
+            if (r.ok) loadMapAdmin(); else alert('失败');
+          } catch (e) { alert('网络错误'); }
+        });
+      });
+    } catch (e) { list.innerHTML = '<p class="msg error">加载失败</p>'; }
+  }
+
+  loadPosts();
+})();
+</script>

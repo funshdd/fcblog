@@ -1,0 +1,126 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getPost } from '../../lib/kv';
+import { marked } from 'marked';
+import defaultCover from '../../assets/default-cover.svg';
+
+const { slug } = Astro.params;
+if (!slug) return new Response(null, { status: 302, headers: { Location: '/' } });
+const kv = (Astro.locals as any).runtime?.env?.BLOG_KV || null;
+const post = kv ? await getPost(kv, slug) : null;
+if (!post) return new Response(null, { status: 302, headers: { Location: '/' } });
+
+const contentHtml = marked.parse(post.content) as string;
+const tags = post.tags ? post.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [];
+---
+
+<Base title={`${post.title} - fnet`} hideSocial={true}>
+  <article>
+    <div class="post-content" style="background: rgba(22,27,34,0.6); backdrop-filter: blur(10px); border: 1px solid #30363d; border-radius: 10px; overflow: hidden;">
+      <div style="position: relative; aspect-ratio: 16/9; overflow: hidden;">
+        <img src={post.cover || defaultCover.src} alt={post.title} style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 60%, rgba(22,27,34,1) 100%);"></div>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem 1.5rem 1.5rem;">
+          <h1 style="font-size: 2.2rem; margin: 0 0 0.1rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.6);">{post.title}</h1>
+          {post.description && (
+            <p style="color: rgba(255,255,255,0.75); font-size: 1.05rem; margin: 0 0 0.3rem;">{post.description}</p>
+          )}
+          <div style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255,255,255,0.55); font-size: 0.8rem;">
+            <span>上传者：「{post.author || 'funsh'}」</span>
+            <time>{new Date(post.date).toLocaleDateString('zh-CN')}</time>
+          </div>
+        </div>
+      </div>
+      {tags.length > 0 && (
+        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; padding: 1rem 1.5rem 0;">
+          {tags.map((tag: string) => (
+            <span style="background: rgba(88,166,255,0.1); color: #58a6ff; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.78rem; border: 1px solid rgba(88,166,255,0.2);">{tag}</span>
+          ))}
+        </div>
+      )}
+      <div style="padding: 0 1.5rem 1.5rem; line-height: 1.9; font-size: 1.05rem;" set:html={contentHtml}>
+      </div>
+    </div>
+    <div style="margin-top: 2rem;">
+      <a href="/" style="color: #8b949e; text-decoration: none;">&larr; 返回首页</a>
+    </div>
+  </article>
+
+  <hr style="border: none; border-top: 1px solid #30363d; margin: 2.5rem 0;" />
+
+  <section id="comments" data-slug={slug}>
+    <h2 style="font-size: 1.25rem; margin-bottom: 1rem; color: #f0f6fc;">评论</h2>
+    <div id="comment-list" style="margin-bottom: 1.5rem;"><p style="color: #8b949e;">加载中...</p></div>
+    <div style="background: rgba(22,27,34,0.5); backdrop-filter: blur(10px); border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem;">
+      <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #f0f6fc;">发表评论</h3>
+      <div class="form-group">
+        <input type="text" id="comment-name" placeholder="昵称" maxlength="50" style="width: 100%; padding: 0.55rem 0.7rem; background: rgba(13,17,23,0.5); color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; font-size: 0.9rem; outline: none; margin-bottom: 0.75rem;" />
+      </div>
+      <div class="form-group">
+        <textarea id="comment-content" placeholder="写下你的想法..." maxlength="2000" rows="4" style="width: 100%; padding: 0.55rem 0.7rem; background: rgba(13,17,23,0.5); color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; font-size: 0.9rem; outline: none; resize: vertical; font-family: inherit; margin-bottom: 0.75rem;"></textarea>
+      </div>
+      <div id="comment-msg"></div>
+      <button id="comment-submit" style="padding: 0.55rem 1.5rem; background: #238636; color: #fff; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">提交评论</button>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const slug = document.getElementById('comments')!.dataset.slug!;
+  const list = document.getElementById('comment-list')!;
+  const nameInput = document.getElementById('comment-name')! as HTMLInputElement;
+  const contentInput = document.getElementById('comment-content')! as HTMLTextAreaElement;
+  const submitBtn = document.getElementById('comment-submit')! as HTMLButtonElement;
+  const msg = document.getElementById('comment-msg')!;
+
+  async function loadComments() {
+    try {
+      const res = await fetch(`/api/comments?slug=${encodeURIComponent(slug)}`);
+      const comments = await res.json();
+      if (comments.length === 0) { list.innerHTML = '<p style="color: #8b949e;">暂无评论，来抢沙发吧。</p>'; return; }
+      list.innerHTML = comments.map((c: any) => `
+        <div style="background: rgba(22,27,34,0.5); backdrop-filter: blur(10px); border: 1px solid #30363d; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <strong style="font-size: 1rem; color: #f0f6fc;">${escapeHtml(c.name)}</strong>
+            <time style="font-size: 0.8rem; color: #c9d1d9;">${new Date(c.date).toLocaleDateString('zh-CN')} ${new Date(c.date).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</time>
+          </div>
+          <p style="color: #c9d1d9; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap;">${escapeHtml(c.content)}</p>
+        </div>
+      `).join('');
+    } catch (err) { list.innerHTML = '<p style="color: #dc2626;">加载失败</p>'; }
+  }
+  function escapeHtml(text: string) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  submitBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    const content = contentInput.value.trim();
+    if (!name || !content) { msg.innerHTML = '<p style="color: #f85149; font-size: 0.85rem;">请填写昵称和内容</p>'; return; }
+    submitBtn.disabled = true; submitBtn.textContent = '提交中...';
+    try {
+      const res = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, name, content }) });
+      if (res.ok) { nameInput.value = ''; contentInput.value = ''; msg.innerHTML = '<p style="color: #3fb950; font-size: 0.85rem;">评论成功</p>'; loadComments(); }
+      else { msg.innerHTML = '<p style="color: #f85149; font-size: 0.85rem;">提交失败</p>'; }
+    } catch (err) { msg.innerHTML = '<p style="color: #f85149; font-size: 0.85rem;">网络错误</p>'; }
+    submitBtn.disabled = false; submitBtn.textContent = '提交评论';
+  });
+  loadComments();
+</script>
+
+<style is:global>
+  .post-content h1,.post-content h2,.post-content h3{color:#f0f6fc;margin-top:1.5rem;margin-bottom:0.75rem}
+  .post-content h1{font-size:1.8rem}.post-content h2{font-size:1.4rem}.post-content h3{font-size:1.15rem}
+  .post-content p{margin-bottom:1rem;color:#c9d1d9}
+  .post-content a{color:#58a6ff;text-decoration:none}.post-content a:hover{text-decoration:underline}
+  .post-content img{max-width:100%;border-radius:6px}
+  .post-content code{background:#21262d;padding:0.15em 0.35em;border-radius:4px;font-size:0.9em;color:#c9d1d9}
+  .post-content pre{background:#0d1117;padding:1rem;border-radius:6px;overflow-x:auto}
+  .post-content pre code{background:none;padding:0}
+  .post-content blockquote{border-left:3px solid #58a6ff;margin:0 0 1rem;padding:0.5rem 1rem;color:#8b949e}
+  .post-content ul,.post-content ol{padding-left:1.5rem;margin-bottom:1rem;color:#c9d1d9}
+  .post-content li{margin-bottom:0.3rem}
+  .post-content hr{border:none;border-top:1px solid #30363d;margin:1.5rem 0}
+  .post-content table{border-collapse:collapse;width:100%;margin-bottom:1rem}
+  .post-content th,.post-content td{border:1px solid #30363d;padding:0.5rem 0.75rem;text-align:left}
+  .post-content th{background:#21262d;font-weight:600}
+  .post-content strong{color:#f0f6fc}
+</style>

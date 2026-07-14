@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="下载 - fnet" hideSocial={true}>
+  <h1 style="font-size: 2rem; margin-bottom: 1.5rem; color: #f0f6fc; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">下载</h1>
+
+  <div id="download-list" class="dl-grid"><p style="color: #8b949e;">加载中...</p></div>
+</Base>
+
+<script>
+  const list = document.getElementById('download-list');
+
+  function formatSize(bytes: number) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  async function load() {
+    try {
+      const res = await fetch('/api/downloads');
+      const data = await res.json();
+      if (!data.length) { list.innerHTML = '<p style="color: #484f58; text-align: center; padding: 2rem 0;">暂无下载内容</p>'; return; }
+      list.innerHTML = data.map((d: any) => `
+        <div style="background: rgba(22,27,34,0.3); backdrop-filter: blur(10px); border: 1px solid #30363d; border-radius: 10px; padding: 1.5rem; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;">
+          <div style="font-size: 3rem; flex-shrink: 0;">📦</div>
+          <div style="flex: 1; min-width: 0;">
+            <h3 style="color: #f0f6fc; font-size: 1.3rem; margin-bottom: 0.3rem;">${esc(d.name)}</h3>
+            ${d.description ? `<p style="color: #b0b8c4; font-size: 0.85rem; margin-bottom: 0.3rem;">${esc(d.description)}</p>` : ''}
+            <span style="color: #8b949e; font-size: 0.8rem;">${formatSize(d.size)} · ${new Date(d.date).toLocaleDateString('zh-CN')}</span>
+          </div>
+          <a href="/api/download-file?id=${esc(d.id)}" style="padding: 0.5rem 1.25rem; background: #238636; color: #fff; border: none; border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 600; flex-shrink: 0;">下载</a>
+        </div>
+      `).join('');
+    } catch (e) { list.innerHTML = '<p style="color: #dc2626;">加载失败</p>'; }
+  }
+
+  function esc(s: string) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  load();
+</script>
+
+<style>
+  .dl-grid { display: grid; gap: 0.75rem; }
+</style>

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "65db5c54bedffb27",
+    "lat": 30.202549,
+    "lng": 120.182105,
+    "title": "钱江四桥右侧下",
+    "photos": [
+      {
+        "id": "a8e94a213edc",
+        "src": "/map-photos/a8e94a213edc.jpg",
+        "uploader": "funsh",
+        "date": "2026-03-14",
+        "note": "被赶出学校的城市游荡者"
+      }
+    ],
+    "color": "#f85149"
+  },
+  {
+    "id": "6ebd562f25329eec",
+    "lat": 30.207927,
+    "lng": 120.194517,
+    "title": "钱江边篮球场",
+    "photos": [
+      {
+        "id": "ddddf614a8bf",
+        "src": "/map-photos/ddddf614a8bf.jpg",
+        "uploader": "funsh",
+        "date": "2026-03-14",
+        "note": "被赶出学校的城市游荡者"
+      }
+    ],
+    "color": "#f85149"
+  }
+]

@@ -1,0 +1,336 @@
+---
+import avatar1 from '../assets/avatars/1.jpg';
+import avatar2 from '../assets/avatars/2.jpg';
+import avatar3 from '../assets/avatars/3.jpg';
+import { ClientRouter } from 'astro:transitions';
+
+interface Props {
+  title: string;
+  hideSocial?: boolean;
+}
+
+const { title, hideSocial } = Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <ClientRouter />
+    <style>
+      @font-face {
+        font-family: 'mcae';
+        src: url('../assets/mcae.ttf') format('truetype');
+      }
+      html {
+        background-color: #0d1117;
+        background-image: url(/back.jpg);
+        background-position: center;
+        background-size: cover;
+        background-attachment: fixed;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #c9d1d9;
+        line-height: 1.7;
+        min-height: 100vh;
+      }
+      .layout {
+        display: grid;
+        min-height: 100vh;
+      }
+      @media (max-width: 760px) {
+        .layout {
+          display: block;
+        }
+      }
+      @media (min-width: 761px) {
+        .layout {
+          grid-template-columns: 320px minmax(0, 1fr);
+        }
+      }
+      aside {
+        background: rgba(22,27,34,0.6);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #30363d;
+        padding: 2rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        flex-shrink: 0;
+        overflow: visible;
+      }
+      @media (min-width: 761px) {
+        aside {
+          border-bottom: none;
+          border-right: 1px solid #30363d;
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          overflow-y: auto;
+          width: 320px;
+        }
+      }
+      aside nav {
+        display: flex;
+        gap: 1.5rem;
+      }
+      @media (max-width: 760px) {
+        aside nav {
+          order: -1;
+          gap: 0.4rem;
+          flex-direction: row;
+          justify-content: center;
+        }
+        aside {
+          padding: 0.4rem 0.75rem;
+          gap: 0.25rem;
+        }
+      }
+      @media (min-width: 761px) {
+        aside nav {
+          flex-direction: row;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+        }
+      }
+      aside nav a {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #e6edf3;
+        text-decoration: none;
+        border-radius: 6px;
+        padding: 0.7rem 0.85rem;
+        display: block;
+      }
+      aside nav a:hover,
+      aside nav a:focus {
+        color: #f0f6fc;
+        background: #21262d;
+      }
+      @media (max-width: 760px) {
+        aside nav a {
+          padding: 0.3rem 0.4rem;
+          font-size: 0.9rem;
+        }
+      }
+      aside .sidebar-info {
+        font-size: 0.85rem;
+        color: #8b949e;
+      }
+      aside .sidebar-info {
+        font-size: 0.85rem;
+        color: #8b949e;
+      }
+      main {
+        width: 100%;
+        max-width: 100ch;
+        padding: 2rem clamp(1rem, 5vw, 4rem);
+        min-width: 0;
+        background: rgba(13,17,23,0.45);
+        backdrop-filter: blur(10px);
+      }
+      @media (max-width: 760px) {
+        main {
+          max-width: none;
+          padding: 0.5rem 1rem 2rem;
+        }
+      }
+      footer {
+        color: #8b949e;
+        background: rgba(22,27,34,0.6);
+        backdrop-filter: blur(10px);
+        text-align: center;
+        font-size: 0.8rem;
+        padding: 1rem;
+      }
+      @media (min-width: 761px) {
+        footer {
+          display: none;
+        }
+      }
+      .glow-text {
+        animation: glow 2s ease-in-out infinite alternate;
+      }
+      @keyframes glow {
+        from { text-shadow: 0 0 8px rgba(255,255,255,0.4), 0 0 16px rgba(255,255,255,0.2); }
+        to { text-shadow: 0 0 12px rgba(255,255,255,0.6), 0 0 24px rgba(255,255,255,0.3); }
+      }
+      .minecraft-title {
+        animation: mc-title 3s ease-in-out infinite;
+        display: inline-block;
+        color: #ffffff;
+        text-shadow: 2px 2px 0 #3E2723;
+        image-rendering: pixelated;
+        -webkit-font-smoothing: none;
+      }
+      @keyframes mc-title {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+      }
+      .rainbow-text {
+        background: linear-gradient(90deg, #ff4d4d, #ff944d, #ffe04d, #4dff4d, #4dc3ff, #7b4dff, #ff4dd4, #ff4d4d);
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: rainbow 3s linear infinite;
+      }
+      @keyframes rainbow {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+      }
+      .sidebar-social a:hover,
+      .sidebar-social button:hover {
+        color: #f0f6fc;
+        border-color: #484f58;
+      }
+      .sidebar-social a,
+      .sidebar-social button {
+        color: #c9d1d9;
+      }
+      audio { border-radius: 8px; }
+      audio::-webkit-media-controls-panel { background-color: #1c2128; border-radius: 8px; }
+      audio::-webkit-media-controls-current-time-display, audio::-webkit-media-controls-time-remaining-display { color: #b0b8c4; font-size: 0.72rem; }
+      audio::-webkit-media-controls-play-button, audio::-webkit-media-controls-mute-button { filter: brightness(0) invert(0.85); }
+      audio::-webkit-media-controls-timeline { border-radius: 3px; height: 4px; margin: 0 10px; background-color: rgba(48,54,61,0.4); }
+      audio::-webkit-media-controls-volume-slider { border-radius: 3px; height: 4px; background-color: rgba(48,54,61,0.4); }
+      @media (max-width: 760px) {
+        #music-player { left: 50%; right: auto; transform: translateX(-50%); width: 90%; bottom: 1rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside>
+        <div class="sidebar-info">
+          <div style="display: grid; grid-template-columns: 76px 96px 76px; justify-content: center; column-gap: 0.6rem; row-gap: 0.1rem; justify-items: center; margin-bottom: 0;">
+            <img src={avatar2.src} alt="avatar 2" style="width: 76px; height: 76px; border-radius: 50%; border: 2px solid #30363d; object-fit: cover; align-self: end;" />
+            <img src={avatar1.src} alt="avatar 1" style="width: 96px; height: 96px; border-radius: 50%; border: 2px solid #30363d; object-fit: cover; align-self: end;" />
+            <img src={avatar3.src} alt="avatar 3" style="width: 76px; height: 76px; border-radius: 50%; border: 2px solid #30363d; object-fit: cover; align-self: end;" />
+            <p class="glow-text" style="font-size: 0.9rem; font-weight: 800; color: #f0f6fc; margin: 0; font-family: 'mcae';">misaka777</p>
+            <p class="glow-text" style="font-size: 1rem; font-weight: 800; color: #f0f6fc; margin: 0; font-family: 'mcae';">FUNSH</p>
+            <p class="glow-text" style="font-size: 0.9rem; font-weight: 800; color: #f0f6fc; margin: 0; font-family: 'mcae';">funshio45k</p>
+            <p class="minecraft-title" style="grid-column: 1 / -1; font-size: 2.5rem; font-weight: 900; margin: 0.3rem 0 0; letter-spacing: 4px; font-family: 'mcae'; white-space: nowrap;">迷你世界の神</p>
+          </div>
+        </div>
+        <nav>
+          <a href="/">首页</a>
+          <a href="/archive">归档</a>
+          <a href="/downloads">下载</a>
+          <a href="/about">关于</a>
+          <a href="/footprints">足迹</a>
+          <a href="/map">地图</a>
+          <a href="/admin">管理</a>
+        </nav>
+        {!hideSocial && (
+        <div class="sidebar-social" style="margin-top: auto; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <a href="https://github.com/funsh" target="_blank" rel="noopener" title="GitHub" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">GitHub</a>
+          <a href="https://space.bilibili.com/427138533" target="_blank" rel="noopener" title="Bilibili" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">Bilibili</a>
+          <a href="https://soundcloud.com/funsh-217150764" target="_blank" rel="noopener" title="SoundCloud" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">SoundCloud</a>
+          <a href="https://www.dizzylab.net/u/117366/music/" target="_blank" rel="noopener" title="Dizzylab" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">Dizzylab</a>
+          <a href="https://funsh.bandcamp.com/" target="_blank" rel="noopener" title="Bandcamp" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">Bandcamp</a>
+          <button class="social-btn" data-platform="迷你世界" data-id="迷你世界之神67 / 迷你世界之神258" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-family: inherit;">迷你世界</button>
+          <button class="social-btn" data-platform="微信" data-id="minishijiezhishen258" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-family: inherit;">微信</button>
+          <button class="social-btn" data-platform="QQ" data-id="1261630963" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-family: inherit;">QQ</button>
+          <button class="social-btn" data-platform="网易云音乐" data-id="misaka777" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-family: inherit;">网易云</button>
+          <button class="social-btn" data-platform="Steam 好友代码" data-id="1262639691" style="padding: 0.4rem 0.7rem; background: rgba(22,27,34,0.4); backdrop-filter: blur(8px); border: 1px solid #30363d; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-family: inherit;">Steam</button>
+        </div>
+        )}
+      </aside>
+      <main>
+        <slot />
+      </main>
+      <footer>
+        <p>i'm the greatest trendsurfer</p>
+      </footer>
+    </div>
+    <div id="info-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center;">
+      <div style="background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 2rem; max-width: 360px; width: 90%; text-align: center;">
+        <h3 id="info-title" style="color: #f0f6fc; margin-bottom: 0.75rem; font-size: 1.1rem;"></h3>
+        <p id="info-text" style="color: #58a6ff; font-size: 1.2rem; font-weight: 700; margin-bottom: 1.5rem;"></p>
+        <button onclick="document.getElementById('info-modal').style.display='none'" style="padding: 0.5rem 1.5rem; background: #238636; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">关闭</button>
+      </div>
+    </div>
+    <div id="music-player" transition:persist="music-player" style="position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 50; background: rgba(13,17,23,0.7); backdrop-filter: blur(20px) saturate(1.5); border: 1px solid rgba(88,166,255,0.15); border-radius: 16px; width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.05); overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem 0.6rem;">
+        <span id="music-header" style="color: rgba(255,255,255,0.9); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">音乐播放器</span>
+        <button id="music-toggle" style="background: rgba(255,255,255,0.08); border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 0.7rem; padding: 0.3rem 0.6rem; border-radius: 6px; transition: all 0.2s;">展开</button>
+      </div>
+      <div id="music-body" style="display: none; padding: 0 1rem 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div style="width: 48px; height: 48px; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: linear-gradient(135deg, #1f6feb 0%, #7c3aed 50%, #db2777 100%); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; box-shadow: 0 4px 12px rgba(31,111,235,0.3);">🎵</div>
+          <div style="flex: 1; min-width: 0;">
+            <div id="music-title" style="color: #f0f6fc; font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">未在播放</div>
+            <div id="music-artist" style="color: rgba(255,255,255,0.4); font-size: 0.7rem; margin-top: 0.15rem;">--</div>
+          </div>
+        </div>
+        <audio id="audio-player" style="width: 100%; height: 32px; margin-bottom: 0.5rem;" controls></audio>
+        <div id="playlist" style="max-height: 130px; overflow-y: auto; border-radius: 8px; background: rgba(255,255,255,0.03);"></div>
+      </div>
+    </div>
+    <script>
+      var social = document.querySelector('.sidebar-social');
+      if (social) {
+        social.addEventListener('click', function(e) {
+          const btn = e.target.closest('.social-btn');
+          if (!btn) return;
+          document.getElementById('info-title').textContent = btn.dataset.platform;
+          document.getElementById('info-text').textContent = btn.dataset.id;
+          document.getElementById('info-modal').style.display = 'flex';
+        });
+      }
+      var modal = document.getElementById('info-modal');
+      if (modal) {
+        modal.addEventListener('click', function(e) {
+          if (e.target === this) this.style.display = 'none';
+        });
+      }
+    </script>
+    <script>
+      (function initPlayer() {
+        var player = document.getElementById('audio-player');
+        if (!player) return;
+        var title = document.getElementById('music-title');
+        var artist = document.getElementById('music-artist');
+        var toggle = document.getElementById('music-toggle');
+        var body = document.getElementById('music-body');
+        var playlist = document.getElementById('playlist');
+        var header = document.getElementById('music-header');
+        var songs = [];
+        var loaded = false;
+        player.volume = 0.5;
+
+        function load() {
+          if (loaded) return;
+          fetch('/api/songs').then(function(r) { return r.json(); }).then(function(d) { songs = d; loaded = true; render(); });
+        }
+
+        function render() {
+          if (!songs.length) { playlist.innerHTML = '<p style="color:#484f58;font-size:0.72rem;text-align:center;padding:0.5rem 0;">暂无音乐</p>'; return; }
+          var cur = player.getAttribute('data-title') || '';
+          playlist.innerHTML = songs.map(function(s,i) { return '<div class="pl-item" data-idx="'+i+'" style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.5rem;border-radius:6px;cursor:pointer;color:'+(cur===s.name?'#58a6ff':'#8b949e')+';font-size:0.78rem;"><span>'+(i+1)+'.</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+s.name+'</span>'+(s.artist?'<span style="color:#484f58;font-size:0.7rem;">'+s.artist+'</span>':'')+'</div>'; }).join('');
+          playlist.querySelectorAll('.pl-item').forEach(function(item) {
+            item.addEventListener('click', function() { var s = songs[parseInt(item.dataset.idx)]; player.src = s.src; player.setAttribute('data-title', s.name); title.textContent = s.name; artist.textContent = s.artist || ''; header.textContent = s.artist ? s.name + ' - ' + s.artist : s.name; player.play(); render(); });
+            item.addEventListener('mouseenter', function() { item.style.background = '#21262d'; });
+            item.addEventListener('mouseleave', function() { item.style.background = ''; });
+          });
+        }
+
+        toggle.addEventListener('click', function() {
+          var h = body.style.display === 'none';
+          body.style.display = h ? '' : 'none';
+          toggle.textContent = h ? '收起' : '展开';
+          if (h && !loaded) load();
+        });
+
+        player.addEventListener('ended', function() { title.textContent = '播放完毕'; header.textContent = '音乐播放器'; });
+      })();
+    </script>
+  </body>
+</html>

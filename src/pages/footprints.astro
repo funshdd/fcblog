@@ -1,0 +1,103 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="足迹 - fnet" hideSocial={true}>
+  <h1 style="font-size: 2rem; margin-bottom: 1.5rem; color: #f0f6fc; text-align: center; text-shadow: 0 2px 8px rgba(0,0,0,0.5);">FUNSH和他的好朋友们</h1>
+
+  <div id="footprint-list" class="fp-grid"><p style="color: #8b949e;">加载中...</p></div>
+
+  <div style="background: rgba(22,27,34,0.5); backdrop-filter: blur(10px); border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem;">
+    <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #f0f6fc;">留下足迹</h3>
+    <div class="form-group" style="margin-bottom: 0.75rem;">
+      <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: #c9d1d9;">头像</label>
+      <input type="file" id="fp-avatar" accept="image/*" style="color: #8b949e; font-size: 0.85rem;" />
+    </div>
+    <div class="form-group" style="margin-bottom: 0.75rem;">
+      <input type="text" id="fp-username" placeholder="你的昵称" maxlength="30" style="width: 100%; padding: 0.55rem 0.7rem; background: rgba(13,17,23,0.5); color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; font-size: 0.9rem; outline: none;" />
+    </div>
+    <div class="form-group" style="margin-bottom: 0.75rem;">
+      <label style="display: block; margin-bottom: 0.3rem; font-size: 0.85rem; color: #c9d1d9;">昵称颜色</label>
+      <div id="color-picker" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="button" class="color-btn active" data-color="#ffffff" style="width: 28px; height: 28px; border-radius: 50%; background: #ffffff; border: 2px solid #30363d; cursor: pointer;"></button>
+        <button type="button" class="color-btn" data-color="#f85149" style="width: 28px; height: 28px; border-radius: 50%; background: #f85149; border: 2px solid #30363d; cursor: pointer;"></button>
+        <button type="button" class="color-btn" data-color="#f0a020" style="width: 28px; height: 28px; border-radius: 50%; background: #f0a020; border: 2px solid #30363d; cursor: pointer;"></button>
+        <button type="button" class="color-btn" data-color="#f778ba" style="width: 28px; height: 28px; border-radius: 50%; background: #f778ba; border: 2px solid #30363d; cursor: pointer;"></button>
+        <button type="button" class="color-btn" data-color="#bc8cff" style="width: 28px; height: 28px; border-radius: 50%; background: #bc8cff; border: 2px solid #30363d; cursor: pointer;"></button>
+        <button type="button" class="color-btn" data-color="#58a6ff" style="width: 28px; height: 28px; border-radius: 50%; background: #58a6ff; border: 2px solid #30363d; cursor: pointer;"></button>
+        <button type="button" class="color-btn" data-color="#3fb950" style="width: 28px; height: 28px; border-radius: 50%; background: #3fb950; border: 2px solid #30363d; cursor: pointer;"></button>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom: 0.75rem;">
+      <textarea id="fp-message" placeholder="说点什么..." maxlength="500" rows="3" style="width: 100%; padding: 0.55rem 0.7rem; background: rgba(13,17,23,0.5); color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; font-size: 0.9rem; outline: none; resize: vertical; font-family: inherit;"></textarea>
+    </div>
+    <div id="fp-msg"></div>
+    <button id="fp-submit" style="padding: 0.55rem 1.5rem; background: #238636; color: #fff; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">留下足迹</button>
+  </div>
+</Base>
+
+<script>
+  const list = document.getElementById('footprint-list');
+  const avatarInput = document.getElementById('fp-avatar');
+  const usernameInput = document.getElementById('fp-username');
+  const messageInput = document.getElementById('fp-message');
+  const submitBtn = document.getElementById('fp-submit');
+  const msg = document.getElementById('fp-msg');
+
+  async function loadFootprints() {
+    try {
+      const res = await fetch('/api/footprints');
+      const data = await res.json();
+      if (!data.length) { list.innerHTML = '<p style="color: #484f58; text-align: center; padding: 2rem 0;">还没有足迹，来留下第一个吧。</p>'; return; }
+      list.innerHTML = data.map((f: any) => `
+        <div style="background: rgba(22,27,34,0.1); backdrop-filter: blur(10px); border-radius: 10px; padding: 1.2rem 0.8rem; text-align: center; transition: transform 0.2s; cursor: default;">
+          ${f.avatar ? `<img src="${esc(f.avatar)}" alt="${esc(f.username)}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;" />` : `<div style="width: 80px; height: 80px; border-radius: 50%; background: #21262d; margin: 0 auto 0.5rem; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 1.5rem;">${esc(f.username[0])}</div>`}
+          <div style="font-weight: 700; color: ${esc(f.color || '#ffffff')}; font-size: 1rem; text-shadow: 0 1px 4px rgba(0,0,0,0.5);">${esc(f.username)}</div>
+          <p style="color: #f0f6fc; font-size: 0.9rem; line-height: 1.3; word-break: break-word; margin: 0.1rem 0; text-shadow: 0 1px 4px rgba(0,0,0,0.4);">${esc(f.message)}</p>
+        </div>
+      `).join('');
+    } catch (e) { list.innerHTML = '<p style="color: #dc2626;">加载失败</p>'; }
+  }
+
+  function esc(s: string) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  let selectedColor = '#ffffff';
+
+  document.getElementById('color-picker').addEventListener('click', (e) => {
+    const btn = e.target.closest('.color-btn');
+    if (!btn) return;
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedColor = btn.dataset.color;
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    const username = usernameInput.value.trim();
+    const message = messageInput.value.trim();
+    if (!username || !message) { msg.innerHTML = '<p style="color: #f85149; font-size: 0.85rem;">请填写昵称和留言</p>'; return; }
+    submitBtn.disabled = true; submitBtn.textContent = '提交中...';
+    try {
+      const fd = new FormData();
+      fd.append('username', username);
+      fd.append('message', message);
+      fd.append('color', selectedColor);
+      if (avatarInput.files?.[0]) fd.append('avatar', avatarInput.files[0]);
+      const res = await fetch('/api/footprints', { method: 'POST', body: fd });
+      if (res.ok) {
+        usernameInput.value = ''; messageInput.value = ''; avatarInput.value = '';
+        msg.innerHTML = '<p style="color: #3fb950; font-size: 0.85rem;">已留下足迹！</p>';
+        loadFootprints();
+      } else {
+        const r = await res.json();
+        msg.innerHTML = '<p style="color: #f85149; font-size: 0.85rem;">' + esc(r.error || '提交失败') + '</p>';
+      }
+    } catch (e) { msg.innerHTML = '<p style="color: #f85149; font-size: 0.85rem;">网络错误</p>'; }
+    submitBtn.disabled = false; submitBtn.textContent = '留下足迹';
+  });
+
+  loadFootprints();
+</script>
+
+<style>
+  .fp-grid { display: grid; grid-template-columns: repeat(auto-fill, 150px); gap: 1rem; justify-content: center; }
+</style>
