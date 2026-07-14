@@ -1,8 +1,9 @@
-export const onRequest = async (context: any, next: any) => {
+export const onRequest = async (context, next) => {
   try {
-    if (context.locals?.runtime?.env?.BLOG_KV) {
-      (globalThis as any).__BLOG_KV__ = context.locals.runtime.env.BLOG_KV;
-    }
-  } catch {}
-  return next();
+    (globalThis as any).__BLOG_KV__ = context.locals?.runtime?.env?.BLOG_KV || context?.env?.BLOG_KV || null;
+  } catch (e) {
+    (globalThis as any).__BLOG_KV__ = (context as any)?.env?.BLOG_KV || null;
+  }
+  const response = await next();
+  return response;
 };

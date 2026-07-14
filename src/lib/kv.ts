@@ -1,9 +1,10 @@
 export function getKV(locals: any): KVNamespace | null {
-  if (locals && locals.runtime && locals.runtime.env) {
-    const kv = locals.runtime.env.BLOG_KV;
-    if (kv) return kv;
-  }
-  return (globalThis as any).__BLOG_KV__ || null;
+  try {
+    if (locals?.runtime?.env?.BLOG_KV) return locals.runtime.env.BLOG_KV;
+  } catch {}
+  const g = (globalThis as any);
+  if (g.__BLOG_KV__) return g.__BLOG_KV__;
+  return null;
 }
 
 function getKVLocal(context: any): KVNamespace | null {
