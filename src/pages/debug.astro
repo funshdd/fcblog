@@ -1,23 +1,8 @@
 ---
-const locals = (Astro.locals as any);
-const hasRuntime = !!locals?.runtime;
-const hasEnv = !!locals?.runtime?.env;
-const hasKV = !!locals?.runtime?.env?.BLOG_KV;
-const globalKV = !!(globalThis as any).__BLOG_KV__;
-
-const localsKeys = locals ? Object.keys(locals) : [];
-const runtimeKeys = locals?.runtime ? Object.keys(locals.runtime) : [];
-const envKeys = locals?.runtime?.env ? Object.keys(locals.runtime.env) : [];
 ---
 <html>
-<body style="background:#0d1117;color:#c9d1d9;font-family:monospace;padding:2rem;">
-<h1>Debug</h1>
-<p>hasRuntime: {String(hasRuntime)}</p>
-<p>hasEnv: {String(hasEnv)}</p>
-<p>hasKV: {String(hasKV)}</p>
-<p>globalKV: {String(globalKV)}</p>
-<p>localsKeys: {localsKeys.join(', ') || 'none'}</p>
-<p>runtimeKeys: {runtimeKeys.join(', ') || 'none'}</p>
-<p>envKeys: {envKeys.join(', ') || 'none'}</p>
+<body style="background:#0d1117;color:#f0f6fc;padding:2rem;font-family:sans-serif;">
+<h1>OK</h1>
+<p>This page works if you can see this.</p>
 </body>
 </html>
