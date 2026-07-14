@@ -2,8 +2,7 @@
 import Base from '../layouts/Base.astro';
 import { getPostList } from '../lib/kv';
 
-const kv = (Astro.locals as any).runtime?.env?.BLOG_KV || null;
-const posts = kv ? await getPostList(kv) : [];
+const posts = await getPostList();
 posts.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 const grouped: Record<string, typeof posts> = {};
