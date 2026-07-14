@@ -7,8 +7,9 @@ function slugify(text: string): string { return text.toLowerCase().replace(/[^\w
 export const GET: APIRoute = async ({ cookies }) => {
   if (!checkAuth(cookies)) return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   const list = await getPostList();
-  list.sort((a: any, b: any) => b.date.localeCompare(a.date));
-  return new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } });
+  const result = list.map((p: any) => ({ ...p, filename: p.slug + '.md' }));
+  result.sort((a: any, b: any) => b.date.localeCompare(a.date));
+  return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {
