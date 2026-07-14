@@ -3,9 +3,9 @@ import { getMusicSongs, getMusicMeta, getKV } from '../../lib/kv';
 
 export const GET: APIRoute = async ({ locals }) => {
   try {
-    const kv = getKV(locals);
-    const songs = await getMusicSongs(kv);
-    const meta = await getMusicMeta(kv);
+    const kv = await getKV();
+    const songs = await getMusicSongs(null);
+    const meta = await getMusicMeta(null);
     const result = songs.map((s: any) => {
       const m = meta[s.filename] || {};
       return {

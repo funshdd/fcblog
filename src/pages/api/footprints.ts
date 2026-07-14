@@ -2,14 +2,14 @@ import type { APIRoute } from 'astro';
 import { getFootprints, addFootprint, deleteFootprint, getKV } from '../../lib/kv';
 
 export const GET: APIRoute = async ({ locals }) => {
-  const kv = getKV(locals); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
-  const data = await getFootprints(kv);
+  const kv = await getKV(); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
+  const data = await getFootprints(null);
   data.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV(); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const fd = await request.formData();
     const username = fd.get('username')?.toString().trim(); const message = fd.get('message')?.toString().trim();
@@ -25,17 +25,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
       avatar = '/api/cover?id=' + id;
     }
     const fp = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), username: username.slice(0, 30), message: message.slice(0, 500), date: new Date().toISOString(), color, avatar };
-    await addFootprint(kv, fp);
+    await addFootprint(null, fp);
     return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
   } catch { return new Response(JSON.stringify({ error: '提交失败' }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
 };
 
 export const DELETE: APIRoute = async ({ request, locals, cookies }) => {
   if (cookies.get('auth')?.value !== 'funsh') return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV(); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const { id } = await request.json();
-    await deleteFootprint(kv, id);
+    await deleteFootprint(null, id);
     return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
   } catch { return new Response(JSON.stringify({ error: '删除失败' }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
 };

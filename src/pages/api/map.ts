@@ -3,16 +3,16 @@ import { getMapMarkers, saveMapMarker, deleteMapMarker, getKV } from '../../lib/
 function checkAuth(c: any) { return c.get('auth')?.value === 'funsh'; }
 
 export const GET: APIRoute = async ({ url, locals }) => {
-  const kv = getKV(locals); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV(); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
   const id = url.searchParams.get('id');
-  if (id) { const m = await getMapMarkers(kv, id); return new Response(JSON.stringify(m || null), { headers: { 'Content-Type': 'application/json' } }); }
-  const all = await getMapMarkers(kv);
+  if (id) { const m = await getMapMarkers(null, id); return new Response(JSON.stringify(m || null), { headers: { 'Content-Type': 'application/json' } }); }
+  const all = await getMapMarkers(null);
   const summary = all.map((m: any) => ({ id: m.id, lat: m.lat, lng: m.lng, title: m.title, count: m.photos.length, color: m.color || '#f85149' }));
   return new Response(JSON.stringify(summary), { headers: { 'Content-Type': 'application/json' } });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV(); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const fd = await request.formData();
     const lat = parseFloat(fd.get('lat')?.toString() || ''); const lng = parseFloat(fd.get('lng')?.toString() || '');
@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     await kv.put(`cover:${photoId}:data`, b64);
     await kv.put(`cover:${photoId}:mime`, file.type || 'image/' + ext);
     const photo = { id: photoId, src: '/api/cover?id=' + photoId, uploader: uploader.slice(0, 30), date: customDate || new Date().toISOString(), note: note.slice(0, 200) };
-    const all = await getMapMarkers(kv);
+    const all = await getMapMarkers(null);
     if (markerId) {
       const m = all.find((x: any) => x.id === markerId);
       if (m) m.photos.push(photo);
@@ -43,20 +43,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 export const DELETE: APIRoute = async ({ request, locals, cookies }) => {
   if (!checkAuth(cookies)) return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV(); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const { markerId, photoId } = await request.json();
-    await deleteMapMarker(kv, markerId, photoId);
+    await deleteMapMarker(null, markerId, photoId);
     return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
   } catch { return new Response(JSON.stringify({ error: '删除失败' }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
 };
 
 export const PUT: APIRoute = async ({ request, locals, cookies }) => {
   if (!checkAuth(cookies)) return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV(); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const { markerId, photoId, uploader, note, date: customDate } = await request.json();
-    const all = await getMapMarkers(kv); const m = all.find((x: any) => x.id === markerId);
+    const all = await getMapMarkers(null); const m = all.find((x: any) => x.id === markerId);
     if (!m) return new Response(JSON.stringify({ error: '不存在' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
     const p = m.photos.find((x: any) => x.id === photoId);
     if (!p) return new Response(JSON.stringify({ error: '不存在' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
