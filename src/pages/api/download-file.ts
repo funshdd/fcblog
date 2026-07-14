@@ -1,11 +1,13 @@
 import type { APIRoute } from 'astro';
+import { getKV } from '../../lib/kv';
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
     if (!id) return new Response('Missing id', { status: 400 });
-    const kv = (locals as any).runtime?.env?.BLOG_KV;
+    const kv = await getKV();
+    if (!kv) return new Response('KV unavailable', { status: 500 });
     const [data, mime, name] = await Promise.all([
       kv.get(`download:${id}:data`),
       kv.get(`download:${id}:mime`),
