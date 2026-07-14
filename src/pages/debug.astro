@@ -1,8 +1,13 @@
 ---
+let hasKV = false;
+try {
+  const kv = (Astro.locals as any)?.runtime?.env?.BLOG_KV;
+  if (kv) { hasKV = true; (globalThis as any).__BLOG_KV__ = kv; }
+} catch {}
 ---
 <!DOCTYPE html>
 <html>
 <body style="background:#0d1117;color:#f0f6fc;padding:2rem;font-family:sans-serif;">
-<h1>OK</h1>
+<p>hasKV: {String(hasKV)}</p>
 </body>
 </html>
