@@ -3,12 +3,14 @@ import { getPostList, getPost, savePost, deletePost } from '../../lib/kv';
 
 function checkAuth(cookies: any) { return cookies.get('auth')?.value === 'funsh'; }
 function slugify(text: string): string { return text.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'post'; }
-function getKv(locals: any) {
-  try {
-    if (locals.runtime?.env?.BLOG_KV) return locals.runtime.env.BLOG_KV;
-    if ((globalThis as any).BLOG_KV) return (globalThis as any).BLOG_KV;
-    return null;
-  } catch { return null; }
+function getKv(_locals: any) {
+  if (_locals && _locals.runtime && _locals.runtime.env) {
+    const kv = _locals.runtime.env.BLOG_KV;
+    if (kv) return kv;
+  }
+  const g = (globalThis as any);
+  if (g.__BLOG_KV__) return g.__BLOG_KV__;
+  return null;
 }
 
 export const GET: APIRoute = async ({ locals, cookies }) => {

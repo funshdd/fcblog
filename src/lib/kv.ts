@@ -1,8 +1,16 @@
-function getKV(context: any): KVNamespace | null {
+export function getKV(locals: any): KVNamespace | null {
+  if (locals && locals.runtime && locals.runtime.env) {
+    const kv = locals.runtime.env.BLOG_KV;
+    if (kv) return kv;
+  }
+  return (globalThis as any).__BLOG_KV__ || null;
+}
+
+function getKVLocal(context: any): KVNamespace | null {
   try { return context?.locals?.runtime?.env?.BLOG_KV || null; } catch { return null; }
 }
 
-export function env(ctx: any) { return getKV(ctx); }
+export function env(ctx: any) { return getKVLocal(ctx); }
 
 // ---- Posts ----
 
