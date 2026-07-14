@@ -1,17 +1,15 @@
 import type { APIRoute } from 'astro';
-import { getFootprints, addFootprint, deleteFootprint } from '../../lib/kv';
-
-function getKv(locals: any) { try { return locals.runtime.env.BLOG_KV; } catch { return null; } }
+import { getFootprints, addFootprint, deleteFootprint, getKV } from '../../lib/kv';
 
 export const GET: APIRoute = async ({ locals }) => {
-  const kv = getKv(locals); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
+  const kv = getKV(locals); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
   const data = await getFootprints(kv);
   data.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const kv = getKv(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const fd = await request.formData();
     const username = fd.get('username')?.toString().trim(); const message = fd.get('message')?.toString().trim();
@@ -34,7 +32,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 export const DELETE: APIRoute = async ({ request, locals, cookies }) => {
   if (cookies.get('auth')?.value !== 'funsh') return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-  const kv = getKv(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const { id } = await request.json();
     await deleteFootprint(kv, id);

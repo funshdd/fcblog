@@ -1,12 +1,12 @@
 import type { APIRoute } from 'astro';
-import { getMusicSongs, getMusicMeta, saveMusicMeta, addMusicSong, deleteMusicSong } from '../../lib/kv';
+import { getMusicSongs, getMusicMeta, saveMusicMeta, addMusicSong, deleteMusicSong, getKV } from '../../lib/kv';
 
 function checkAuth(cookies: any) { return cookies.get('auth')?.value === 'funsh'; }
 
 export const GET: APIRoute = async ({ cookies, locals }) => {
   if (!checkAuth(cookies)) return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   try {
-    const kv = (locals as any).runtime?.env?.BLOG_KV;
+    const kv = getKV(locals);
     const songs = await getMusicSongs(kv);
     const meta = await getMusicMeta(kv);
     const data = songs.map((s: any) => {
@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (ext !== 'mp3') return new Response(JSON.stringify({ error: '仅支持 MP3 格式' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     let name = file.name.replace(/[^\w\u4e00-\u9fff\-\.\s]/g, '').replace(/\s+/g, '-') || 'music.mp3';
-    const kv = (locals as any).runtime?.env?.BLOG_KV;
+    const kv = getKV(locals);
     const songs = await getMusicSongs(kv);
     if (songs.some((s: any) => s.filename === name)) name = Date.now().toString(36) + '-' + name;
     const buffer = await file.arrayBuffer();
@@ -44,7 +44,7 @@ export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
   try {
     const { name } = await request.json();
     if (!name) return new Response(JSON.stringify({ error: '缺少参数' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    const kv = (locals as any).runtime?.env?.BLOG_KV;
+    const kv = getKV(locals);
     await kv.delete(`music:${name}:data`);
     await kv.delete(`music:${name}:mime`);
     await deleteMusicSong(kv, name);
@@ -57,7 +57,7 @@ export const PUT: APIRoute = async ({ request, cookies, locals }) => {
   try {
     const { filename, name, artist, cover } = await request.json();
     if (!filename) return new Response(JSON.stringify({ error: '缺少参数' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    const kv = (locals as any).runtime?.env?.BLOG_KV;
+    const kv = getKV(locals);
     const meta = await getMusicMeta(kv);
     meta[filename] = { name: name || '', artist: artist || '', cover: cover || '' };
     await saveMusicMeta(kv, meta);

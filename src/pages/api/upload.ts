@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
-import { saveCover } from '../../lib/kv';
+import { saveCover, getKV } from '../../lib/kv';
 
 export const POST: APIRoute = async ({ request, locals, cookies }) => {
   if (cookies.get('auth')?.value !== 'funsh') return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-  const kv = (locals as any).runtime?.env?.BLOG_KV; if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  const kv = getKV(locals); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   try {
     const fd = await request.formData(); const file = fd.get('file') as File | null;
     if (!file || !file.size) return new Response(JSON.stringify({ error: '请选择文件' }), { status: 400, headers: { 'Content-Type': 'application/json' } });

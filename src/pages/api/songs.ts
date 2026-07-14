@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
-import { getMusicSongs, getMusicMeta } from '../../lib/kv';
+import { getMusicSongs, getMusicMeta, getKV } from '../../lib/kv';
 
 export const GET: APIRoute = async ({ locals }) => {
   try {
-    const kv = (locals as any).runtime?.env?.BLOG_KV;
+    const kv = getKV(locals);
     const songs = await getMusicSongs(kv);
     const meta = await getMusicMeta(kv);
     const result = songs.map((s: any) => {
