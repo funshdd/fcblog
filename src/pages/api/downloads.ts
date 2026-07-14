@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     const fd = await request.formData(); const name = fd.get('name')?.toString().trim(); const desc = fd.get('description')?.toString().trim();
     const file = fd.get('file') as File | null;
     if (!name || !file || !file.size) return new Response(JSON.stringify({ error: '请填写名称并选择文件' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    if (file.size > 100 * 1024 * 1024) return new Response(JSON.stringify({ error: '文件不能超过100MB' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    if (file.size > 15 * 1024 * 1024) return new Response(JSON.stringify({ error: '文件不能超过15MB' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
     const b64 = bufferToBase64(await file.arrayBuffer());
