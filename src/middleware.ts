@@ -1,12 +1,14 @@
+let _kv: any = null;
+
 export const onRequest = async (context: any, next: any) => {
-  if (!(globalThis as any).__BLOG_KV__) {
-    try {
-      const env = context?.locals?.runtime?.env;
-      if (env && env.BLOG_KV) {
-        (globalThis as any).__BLOG_KV__ = env.BLOG_KV;
-      }
-    } catch (e) {}
+  if (!_kv) {
+    _kv =
+      context?.locals?.runtime?.env?.BLOG_KV ||
+      context?.env?.BLOG_KV ||
+      context?.platform?.env?.BLOG_KV ||
+      context?.cf?.env?.BLOG_KV ||
+      null;
+    (globalThis as any).__BLOG_KV__ = _kv;
   }
-  const response = await next();
-  return response;
+  return next();
 };
