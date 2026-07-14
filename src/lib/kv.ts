@@ -5,6 +5,7 @@ async function resolveEnv(): Promise<any> {
   try {
     const mod = await import('cloudflare:workers');
     _env = mod.env;
+    (globalThis as any).__BLOG_R2__ = mod.env?.BLOG_R2 || null;
   } catch {
     _env = null;
   }
