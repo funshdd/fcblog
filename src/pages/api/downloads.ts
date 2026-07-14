@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getDownloads, addDownload, deleteDownload, getKV } from '../../lib/kv';
+import { getDownloads, addDownload, deleteDownload, getKV, bufferToBase64 } from '../../lib/kv';
 
 export const GET: APIRoute = async ({ url, locals, cookies }) => {
   const kv = await getKV(); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
@@ -18,7 +18,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     if (file.size > 100 * 1024 * 1024) return new Response(JSON.stringify({ error: '文件不能超过100MB' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
-    const b64 = btoa(String.fromCharCode(...new Uint8Array(await file.arrayBuffer())));
+    const b64 = bufferToBase64(await file.arrayBuffer());
     await kv.put(`download:${id}:data`, b64);
     await kv.put(`download:${id}:mime`, file.type || 'application/octet-stream');
     await kv.put(`download:${id}:name`, file.name);

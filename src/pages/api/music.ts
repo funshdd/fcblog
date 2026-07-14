@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getMusicSongs, getMusicMeta, saveMusicMeta, addMusicSong, deleteMusicSong, getKV } from '../../lib/kv';
+import { getMusicSongs, getMusicMeta, saveMusicMeta, addMusicSong, deleteMusicSong, getKV, bufferToBase64 } from '../../lib/kv';
 
 function checkAuth(cookies: any) { return cookies.get('auth')?.value === 'funsh'; }
 
@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     const songs = await getMusicSongs(null);
     if (songs.some((s: any) => s.filename === name)) name = Date.now().toString(36) + '-' + name;
     const buffer = await file.arrayBuffer();
-    const b64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const b64 = bufferToBase64(buffer);
     await kv.put(`music:${name}:data`, b64);
     await kv.put(`music:${name}:mime`, file.type || 'audio/mpeg');
     await addMusicSong(null, { filename: name, size: file.size });

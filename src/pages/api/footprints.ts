@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getFootprints, addFootprint, deleteFootprint, getKV } from '../../lib/kv';
+import { getFootprints, addFootprint, deleteFootprint, getKV, bufferToBase64 } from '../../lib/kv';
 
 export const GET: APIRoute = async ({ locals }) => {
   const kv = await getKV(); if (!kv) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (avatarFile && avatarFile.size > 0 && avatarFile.size < 2 * 1024 * 1024) {
       const ext = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg';
       const id = 'fp-' + Date.now().toString(36) + '.' + ext;
-      const b64 = btoa(String.fromCharCode(...new Uint8Array(await avatarFile.arrayBuffer())));
+      const b64 = bufferToBase64(await avatarFile.arrayBuffer());
       await kv.put(`cover:${id}:data`, b64);
       await kv.put(`cover:${id}:mime`, avatarFile.type || 'image/' + ext);
       avatar = '/api/cover?id=' + id;

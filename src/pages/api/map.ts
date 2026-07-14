@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getMapMarkers, saveMapMarker, deleteMapMarker, getKV } from '../../lib/kv';
+import { getMapMarkers, saveMapMarker, deleteMapMarker, getKV, bufferToBase64 } from '../../lib/kv';
 function checkAuth(c: any) { return c.get('auth')?.value === 'funsh'; }
 
 export const GET: APIRoute = async ({ url, locals }) => {
@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (file.size > 5 * 1024 * 1024) return new Response(JSON.stringify({ error: '图片不能超过5MB' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const photoId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    const b64 = btoa(String.fromCharCode(...new Uint8Array(await file.arrayBuffer())));
+    const b64 = bufferToBase64(await file.arrayBuffer());
     await kv.put(`cover:${photoId}:data`, b64);
     await kv.put(`cover:${photoId}:mime`, file.type || 'image/' + ext);
     const photo = { id: photoId, src: '/api/cover?id=' + photoId, uploader: uploader.slice(0, 30), date: customDate || new Date().toISOString(), note: note.slice(0, 200) };
