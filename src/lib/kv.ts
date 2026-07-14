@@ -1,17 +1,19 @@
-let _env: any = null;
-try {
-  const mod = await import('cloudflare:workers');
-  _env = (mod as any).env;
-} catch {}
+let _env: any = undefined;
 
-export function getKV(): KVNamespace | null {
-  if (!_env) {
-    try {
-      const mod = await import('cloudflare:workers');
-      _env = (mod as any).env;
-    } catch {}
+async function resolveEnv(): Promise<any> {
+  if (_env !== undefined) return _env;
+  try {
+    const mod = await import('cloudflare:workers');
+    _env = mod.env;
+  } catch {
+    _env = null;
   }
-  return _env?.BLOG_KV || null;
+  return _env;
+}
+
+export async function getKV(): Promise<KVNamespace | null> {
+  const env = await resolveEnv();
+  return env?.BLOG_KV || null;
 }
 
 export async function getPostList(_kv?: KVNamespace) {
