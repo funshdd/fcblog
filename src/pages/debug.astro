@@ -1,13 +1,12 @@
 ---
+import { getKV } from '../lib/kv';
 let hasKV = false;
-try {
-  const kv = (Astro.locals as any)?.runtime?.env?.BLOG_KV;
-  if (kv) { hasKV = true; (globalThis as any).__BLOG_KV__ = kv; }
-} catch {}
+const kv = await getKV();
+hasKV = !!kv;
 ---
 <!DOCTYPE html>
 <html>
 <body style="background:#0d1117;color:#f0f6fc;padding:2rem;font-family:sans-serif;">
-<p>hasKV: {String(hasKV)}</p>
+<p>hasKV (cloudflare:workers): {String(hasKV)}</p>
 </body>
 </html>

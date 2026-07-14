@@ -3,11 +3,7 @@ import Base from '../layouts/Base.astro';
 import { getPostList } from '../lib/kv';
 import defaultCover from '../assets/default-cover.svg';
 
-let posts: any[] = [];
-try {
-  const kv = (Astro.locals as any).runtime?.env?.BLOG_KV;
-  if (kv) posts = await getPostList(kv);
-} catch {}
+const posts = await getPostList();
 posts.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 ---
 

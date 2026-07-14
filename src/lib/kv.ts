@@ -1,28 +1,29 @@
-export function getKV(locals: any): KVNamespace | null {
-  try {
-    if (locals?.runtime?.env?.BLOG_KV) return locals.runtime.env.BLOG_KV;
-  } catch {}
-  try {
-    const mwKV = ((globalThis as any).__getCapturedKV__ as Function)?.();
-    if (mwKV) return mwKV;
-  } catch {}
-  return null;
+let _env: any = null;
+try {
+  const mod = await import('cloudflare:workers');
+  _env = (mod as any).env;
+} catch {}
+
+export function getKV(): KVNamespace | null {
+  if (!_env) {
+    try {
+      const mod = await import('cloudflare:workers');
+      _env = (mod as any).env;
+    } catch {}
+  }
+  return _env?.BLOG_KV || null;
 }
 
-function getKVLocal(context: any): KVNamespace | null {
-  try { return context?.locals?.runtime?.env?.BLOG_KV || null; } catch { return null; }
-}
-
-export function env(ctx: any) { return getKVLocal(ctx); }
-
-// ---- Posts ----
-
-export async function getPostList(kv: KVNamespace) {
+export async function getPostList(_kv?: KVNamespace) {
+  const kv = _kv || getKV();
+  if (!kv) return [];
   const raw = await kv.get('posts:list', 'json');
   return (raw as any[]) || [];
 }
 
-export async function getPost(kv: KVNamespace, slug: string) {
+export async function getPost(_kv: KVNamespace | null, slug: string) {
+  const kv = _kv || getKV();
+  if (!kv) return null;
   const [meta, content] = await Promise.all([
     kv.get(`post:${slug}:meta`, 'json'),
     kv.get(`post:${slug}:content`),
@@ -31,7 +32,9 @@ export async function getPost(kv: KVNamespace, slug: string) {
   return { ...(meta as any), content };
 }
 
-export async function savePost(kv: KVNamespace, meta: any, content: string) {
+export async function savePost(_kv: KVNamespace | null, meta: any, content: string) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   await kv.put(`post:${meta.slug}:meta`, JSON.stringify(meta));
   await kv.put(`post:${meta.slug}:content`, content);
   let list = await getPostList(kv);
@@ -41,7 +44,9 @@ export async function savePost(kv: KVNamespace, meta: any, content: string) {
   await kv.put('posts:list', JSON.stringify(list));
 }
 
-export async function deletePost(kv: KVNamespace, slug: string) {
+export async function deletePost(_kv: KVNamespace | null, slug: string) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   await kv.delete(`post:${slug}:meta`);
   await kv.delete(`post:${slug}:content`);
   let list = await getPostList(kv);
@@ -49,26 +54,32 @@ export async function deletePost(kv: KVNamespace, slug: string) {
   await kv.put('posts:list', JSON.stringify(list));
 }
 
-// ---- Comments ----
-
-export async function getComments(kv: KVNamespace, slug: string) {
+export async function getComments(_kv: KVNamespace | null, slug: string) {
+  const kv = _kv || getKV();
+  if (!kv) return [];
   return (await kv.get(`comment:${slug}`, 'json')) as any[] || [];
 }
 
-export async function addComment(kv: KVNamespace, slug: string, comment: any) {
+export async function addComment(_kv: KVNamespace | null, slug: string, comment: any) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   const comments = await getComments(kv, slug);
   comments.push(comment);
   await kv.put(`comment:${slug}`, JSON.stringify(comments));
 }
 
-export async function deleteComment(kv: KVNamespace, slug: string, id: string) {
+export async function deleteComment(_kv: KVNamespace | null, slug: string, id: string) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   let comments = await getComments(kv, slug);
   comments = comments.filter((c: any) => c.id !== id);
   if (comments.length) await kv.put(`comment:${slug}`, JSON.stringify(comments));
   else await kv.delete(`comment:${slug}`);
 }
 
-export async function getAllComments(kv: KVNamespace) {
+export async function getAllComments(_kv?: KVNamespace | null) {
+  const kv = _kv || getKV();
+  if (!kv) return [];
   const posts = await getPostList(kv);
   const result: any[] = [];
   for (const p of posts) {
@@ -78,56 +89,66 @@ export async function getAllComments(kv: KVNamespace) {
   return result;
 }
 
-// ---- Covers ----
-
-export async function saveCover(kv: KVNamespace, id: string, buffer: ArrayBuffer, mime: string) {
+export async function saveCover(_kv: KVNamespace | null, id: string, buffer: ArrayBuffer, mime: string) {
+  const kv = _kv || getKV();
+  if (!kv) return `/covers/${id}`;
   const b64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
   await kv.put(`cover:${id}:data`, b64);
   await kv.put(`cover:${id}:mime`, mime);
   return `/api/cover?id=${id}`;
 }
 
-export async function getCover(kv: KVNamespace, id: string) {
+export async function getCover(_kv: KVNamespace | null, id: string) {
+  const kv = _kv || getKV();
+  if (!kv) return null;
   const [data, mime] = await Promise.all([kv.get(`cover:${id}:data`), kv.get(`cover:${id}:mime`)]);
   if (!data || !mime) return null;
   return { data, mime };
 }
 
-// ---- Footprints ----
-
-export async function getFootprints(kv: KVNamespace) {
+export async function getFootprints(_kv?: KVNamespace | null) {
+  const kv = _kv || getKV();
+  if (!kv) return [];
   return (await kv.get('footprints:list', 'json')) as any[] || [];
 }
 
-export async function addFootprint(kv: KVNamespace, fp: any) {
+export async function addFootprint(_kv: KVNamespace | null, fp: any) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   const list = await getFootprints(kv);
   list.push(fp);
   await kv.put('footprints:list', JSON.stringify(list));
 }
 
-export async function deleteFootprint(kv: KVNamespace, id: string) {
+export async function deleteFootprint(_kv: KVNamespace | null, id: string) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   let list = await getFootprints(kv);
   list = list.filter((f: any) => f.id !== id);
   await kv.put('footprints:list', JSON.stringify(list));
 }
 
-// ---- Map ----
-
-export async function getMapMarkers(kv: KVNamespace, markerId?: string) {
+export async function getMapMarkers(_kv?: KVNamespace | null, markerId?: string) {
+  const kv = _kv || getKV();
+  if (!kv) return markerId ? null : [];
   const all = (await kv.get('map:markers', 'json')) as any[] || [];
   if (markerId) return all.find((m: any) => m.id === markerId) || null;
   return all;
 }
 
-export async function saveMapMarker(kv: KVNamespace, marker: any) {
-  const list = await getMapMarkers(kv);
+export async function saveMapMarker(_kv: KVNamespace | null, marker: any) {
+  const kv = _kv || getKV();
+  if (!kv) return;
+  const list = await getMapMarkers(kv) as any[];
   const idx = list.findIndex((m: any) => m.id === marker.id);
   if (idx >= 0) list[idx] = marker; else list.push(marker);
   await kv.put('map:markers', JSON.stringify(list));
 }
 
-export async function deleteMapMarker(kv: KVNamespace, markerId: string, photoId?: string) {
-  const list = await getMapMarkers(kv);
+export async function deleteMapMarker(_kv: KVNamespace | null, markerId: string, photoId?: string) {
+  const kv = _kv || getKV();
+  if (!kv) return;
+  const list = await getMapMarkers(kv) as any[];
   const marker = list.find((m: any) => m.id === markerId);
   if (!marker) return;
   if (photoId) {
@@ -139,45 +160,57 @@ export async function deleteMapMarker(kv: KVNamespace, markerId: string, photoId
   await kv.put('map:markers', JSON.stringify(list));
 }
 
-// ---- Downloads ----
-
-export async function getDownloads(kv: KVNamespace) {
+export async function getDownloads(_kv?: KVNamespace | null) {
+  const kv = _kv || getKV();
+  if (!kv) return [];
   return (await kv.get('downloads:list', 'json')) as any[] || [];
 }
 
-export async function addDownload(kv: KVNamespace, item: any) {
+export async function addDownload(_kv: KVNamespace | null, item: any) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   const list = await getDownloads(kv);
   list.push(item);
   await kv.put('downloads:list', JSON.stringify(list));
 }
 
-export async function deleteDownload(kv: KVNamespace, id: string) {
+export async function deleteDownload(_kv: KVNamespace | null, id: string) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   let list = await getDownloads(kv);
   list = list.filter((d: any) => d.id !== id);
   await kv.put('downloads:list', JSON.stringify(list));
 }
 
-// ---- Music ----
-
-export async function getMusicSongs(kv: KVNamespace) {
+export async function getMusicSongs(_kv?: KVNamespace | null) {
+  const kv = _kv || getKV();
+  if (!kv) return [];
   return (await kv.get('music:songs', 'json')) as any[] || [];
 }
 
-export async function getMusicMeta(kv: KVNamespace) {
+export async function getMusicMeta(_kv?: KVNamespace | null) {
+  const kv = _kv || getKV();
+  if (!kv) return {};
   return (await kv.get('music:meta', 'json')) as Record<string, any> || {};
 }
 
-export async function saveMusicMeta(kv: KVNamespace, meta: Record<string, any>) {
+export async function saveMusicMeta(_kv: KVNamespace | null, meta: Record<string, any>) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   await kv.put('music:meta', JSON.stringify(meta));
 }
 
-export async function addMusicSong(kv: KVNamespace, song: any) {
+export async function addMusicSong(_kv: KVNamespace | null, song: any) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   const list = await getMusicSongs(kv);
   list.push(song);
   await kv.put('music:songs', JSON.stringify(list));
 }
 
-export async function deleteMusicSong(kv: KVNamespace, filename: string) {
+export async function deleteMusicSong(_kv: KVNamespace | null, filename: string) {
+  const kv = _kv || getKV();
+  if (!kv) return;
   let list = await getMusicSongs(kv);
   list = list.filter((s: any) => s.filename !== filename);
   await kv.put('music:songs', JSON.stringify(list));
