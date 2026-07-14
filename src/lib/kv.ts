@@ -17,14 +17,14 @@ export async function getKV(): Promise<KVNamespace | null> {
 }
 
 export async function getPostList(_kv?: KVNamespace) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return [];
   const raw = await kv.get('posts:list', 'json');
   return (raw as any[]) || [];
 }
 
 export async function getPost(_kv: KVNamespace | null, slug: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return null;
   const [meta, content] = await Promise.all([
     kv.get(`post:${slug}:meta`, 'json'),
@@ -35,7 +35,7 @@ export async function getPost(_kv: KVNamespace | null, slug: string) {
 }
 
 export async function savePost(_kv: KVNamespace | null, meta: any, content: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   await kv.put(`post:${meta.slug}:meta`, JSON.stringify(meta));
   await kv.put(`post:${meta.slug}:content`, content);
@@ -47,7 +47,7 @@ export async function savePost(_kv: KVNamespace | null, meta: any, content: stri
 }
 
 export async function deletePost(_kv: KVNamespace | null, slug: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   await kv.delete(`post:${slug}:meta`);
   await kv.delete(`post:${slug}:content`);
@@ -57,13 +57,13 @@ export async function deletePost(_kv: KVNamespace | null, slug: string) {
 }
 
 export async function getComments(_kv: KVNamespace | null, slug: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return [];
   return (await kv.get(`comment:${slug}`, 'json')) as any[] || [];
 }
 
 export async function addComment(_kv: KVNamespace | null, slug: string, comment: any) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   const comments = await getComments(kv, slug);
   comments.push(comment);
@@ -71,7 +71,7 @@ export async function addComment(_kv: KVNamespace | null, slug: string, comment:
 }
 
 export async function deleteComment(_kv: KVNamespace | null, slug: string, id: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   let comments = await getComments(kv, slug);
   comments = comments.filter((c: any) => c.id !== id);
@@ -80,7 +80,7 @@ export async function deleteComment(_kv: KVNamespace | null, slug: string, id: s
 }
 
 export async function getAllComments(_kv?: KVNamespace | null) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return [];
   const posts = await getPostList(kv);
   const result: any[] = [];
@@ -92,7 +92,7 @@ export async function getAllComments(_kv?: KVNamespace | null) {
 }
 
 export async function saveCover(_kv: KVNamespace | null, id: string, buffer: ArrayBuffer, mime: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return `/covers/${id}`;
   const b64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
   await kv.put(`cover:${id}:data`, b64);
@@ -101,7 +101,7 @@ export async function saveCover(_kv: KVNamespace | null, id: string, buffer: Arr
 }
 
 export async function getCover(_kv: KVNamespace | null, id: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return null;
   const [data, mime] = await Promise.all([kv.get(`cover:${id}:data`), kv.get(`cover:${id}:mime`)]);
   if (!data || !mime) return null;
@@ -109,13 +109,13 @@ export async function getCover(_kv: KVNamespace | null, id: string) {
 }
 
 export async function getFootprints(_kv?: KVNamespace | null) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return [];
   return (await kv.get('footprints:list', 'json')) as any[] || [];
 }
 
 export async function addFootprint(_kv: KVNamespace | null, fp: any) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   const list = await getFootprints(kv);
   list.push(fp);
@@ -123,7 +123,7 @@ export async function addFootprint(_kv: KVNamespace | null, fp: any) {
 }
 
 export async function deleteFootprint(_kv: KVNamespace | null, id: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   let list = await getFootprints(kv);
   list = list.filter((f: any) => f.id !== id);
@@ -131,7 +131,7 @@ export async function deleteFootprint(_kv: KVNamespace | null, id: string) {
 }
 
 export async function getMapMarkers(_kv?: KVNamespace | null, markerId?: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return markerId ? null : [];
   const all = (await kv.get('map:markers', 'json')) as any[] || [];
   if (markerId) return all.find((m: any) => m.id === markerId) || null;
@@ -139,7 +139,7 @@ export async function getMapMarkers(_kv?: KVNamespace | null, markerId?: string)
 }
 
 export async function saveMapMarker(_kv: KVNamespace | null, marker: any) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   const list = await getMapMarkers(kv) as any[];
   const idx = list.findIndex((m: any) => m.id === marker.id);
@@ -148,7 +148,7 @@ export async function saveMapMarker(_kv: KVNamespace | null, marker: any) {
 }
 
 export async function deleteMapMarker(_kv: KVNamespace | null, markerId: string, photoId?: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   const list = await getMapMarkers(kv) as any[];
   const marker = list.find((m: any) => m.id === markerId);
@@ -163,13 +163,13 @@ export async function deleteMapMarker(_kv: KVNamespace | null, markerId: string,
 }
 
 export async function getDownloads(_kv?: KVNamespace | null) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return [];
   return (await kv.get('downloads:list', 'json')) as any[] || [];
 }
 
 export async function addDownload(_kv: KVNamespace | null, item: any) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   const list = await getDownloads(kv);
   list.push(item);
@@ -177,7 +177,7 @@ export async function addDownload(_kv: KVNamespace | null, item: any) {
 }
 
 export async function deleteDownload(_kv: KVNamespace | null, id: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   let list = await getDownloads(kv);
   list = list.filter((d: any) => d.id !== id);
@@ -185,25 +185,25 @@ export async function deleteDownload(_kv: KVNamespace | null, id: string) {
 }
 
 export async function getMusicSongs(_kv?: KVNamespace | null) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return [];
   return (await kv.get('music:songs', 'json')) as any[] || [];
 }
 
 export async function getMusicMeta(_kv?: KVNamespace | null) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return {};
   return (await kv.get('music:meta', 'json')) as Record<string, any> || {};
 }
 
 export async function saveMusicMeta(_kv: KVNamespace | null, meta: Record<string, any>) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   await kv.put('music:meta', JSON.stringify(meta));
 }
 
 export async function addMusicSong(_kv: KVNamespace | null, song: any) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   const list = await getMusicSongs(kv);
   list.push(song);
@@ -211,7 +211,7 @@ export async function addMusicSong(_kv: KVNamespace | null, song: any) {
 }
 
 export async function deleteMusicSong(_kv: KVNamespace | null, filename: string) {
-  const kv = _kv || getKV();
+  const kv = _kv || await getKV();
   if (!kv) return;
   let list = await getMusicSongs(kv);
   list = list.filter((s: any) => s.filename !== filename);
