@@ -6,8 +6,13 @@ function slugify(text: string): string { return text.toLowerCase().replace(/[^\w
 
 export const GET: APIRoute = async ({ cookies }) => {
   if (!checkAuth(cookies)) return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV();
   const list = await getPostList();
-  const result = list.map((p: any) => ({ ...p, filename: p.slug + '.md' }));
+  const result = [];
+  for (const p of list) {
+    const content = kv ? await kv.get(`post:${p.slug}:content`) || '' : '';
+    result.push({ ...p, filename: p.slug + '.md', content });
+  }
   result.sort((a: any, b: any) => b.date.localeCompare(a.date));
   return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
 };
