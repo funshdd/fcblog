@@ -209,6 +209,7 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
             <button class="panel-tab" data-list="downloads">下载</button>
             <button class="panel-tab" data-list="music">音乐</button>
             <button class="panel-tab" data-list="map">地图</button>
+            <button class="panel-tab" data-list="footprints">足迹</button>
           </div>
           <div class="panel-list" id="panel-posts">
             <button class="btn btn-new" id="btn-new-post">+ 新建文章</button>
@@ -295,6 +296,9 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
           <div class="panel-list" id="panel-map" style="display: none;">
             <div id="map-sidelist"><p class="empty-state">加载中...</p></div>
           </div>
+          <div class="panel-list" id="panel-footprints" style="display: none;">
+            <div id="footprint-sidelist"><p class="empty-state">加载中...</p></div>
+          </div>
                 <input type="file" id="cover-file" accept="image/*" style="display: none;" />
               </div>
             </div>
@@ -371,11 +375,13 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
       document.getElementById('panel-downloads').style.display = list === 'downloads' ? '' : 'none';
       document.getElementById('panel-music').style.display = list === 'music' ? '' : 'none';
       document.getElementById('panel-map').style.display = list === 'map' ? '' : 'none';
+      document.getElementById('panel-footprints').style.display = list === 'footprints' ? '' : 'none';
       if (list === 'posts') loadPosts();
       if (list === 'comments') loadComments();
       if (list === 'downloads') loadDownloads();
       if (list === 'music') loadMusic();
       if (list === 'map') loadMapAdmin();
+      if (list === 'footprints') loadFootprintsAdmin();
     });
   });
 
@@ -793,6 +799,31 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
           try {
             const r = await fetch('/api/map', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markerId: s.id }) });
             if (r.ok) loadMapAdmin(); else alert('失败');
+          } catch (e) { alert('网络错误'); }
+        });
+      });
+    } catch (e) { list.innerHTML = '<p class="msg error">加载失败</p>'; }
+  }
+
+  async function loadFootprintsAdmin() {
+    const list = document.getElementById('footprint-sidelist');
+    try {
+      const res = await fetch('/api/footprints');
+      const data = await res.json();
+      if (!data.length) { list.innerHTML = '<p class="empty-state">暂无足迹</p>'; return; }
+      list.innerHTML = data.map((f: any) => `
+        <div class="post-item" style="cursor:default;">
+          <h4>${esc(f.username)}</h4>
+          <div class="meta">${f.message?.slice(0, 50)} · ${new Date(f.date).toLocaleDateString('zh-CN')}</div>
+          <div class="actions"><button class="danger del-fp" data-id="${esc(f.id)}">删除</button></div>
+        </div>
+      `).join('');
+      list.querySelectorAll('.del-fp').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('确定删除？')) return;
+          try {
+            const r = await fetch('/api/footprints', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: btn.dataset.id }) });
+            if (r.ok) loadFootprintsAdmin(); else alert('失败');
           } catch (e) { alert('网络错误'); }
         });
       });
