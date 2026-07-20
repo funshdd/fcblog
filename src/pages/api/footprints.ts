@@ -39,3 +39,20 @@ export const DELETE: APIRoute = async ({ request, locals, cookies }) => {
     return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
   } catch { return new Response(JSON.stringify({ error: '删除失败' }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
 };
+
+export const PUT: APIRoute = async ({ request, cookies }) => {
+  if (cookies.get('auth')?.value !== 'funsh') return new Response(JSON.stringify({ error: '未登录' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  const kv = await getKV(); if (!kv) return new Response(JSON.stringify({ error: 'KV不可用' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  try {
+    const { id, username, message, color } = await request.json();
+    if (!id) return new Response(JSON.stringify({ error: '缺少参数' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    const list = await getFootprints(null);
+    const fp = list.find((f: any) => f.id === id);
+    if (!fp) return new Response(JSON.stringify({ error: '不存在' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    if (username !== undefined) fp.username = username.slice(0, 30);
+    if (message !== undefined) fp.message = message.slice(0, 500);
+    if (color !== undefined) fp.color = color;
+    await kv.put('footprints:list', JSON.stringify(list));
+    return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+  } catch (e: any) { return new Response(JSON.stringify({ error: e.message || '更新失败' }), { status: 500, headers: { 'Content-Type': 'application/json' } }); }
+};

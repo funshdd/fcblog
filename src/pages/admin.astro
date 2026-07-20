@@ -812,10 +812,20 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
       const data = await res.json();
       if (!data.length) { list.innerHTML = '<p class="empty-state">暂无足迹</p>'; return; }
       list.innerHTML = data.map((f: any) => `
-        <div class="post-item" style="cursor:default;">
-          <h4>${esc(f.username)}</h4>
-          <div class="meta">${f.message?.slice(0, 50)} · ${new Date(f.date).toLocaleDateString('zh-CN')}</div>
-          <div class="actions"><button class="danger del-fp" data-id="${esc(f.id)}">删除</button></div>
+        <div class="post-item" style="cursor:default;" data-id="${esc(f.id)}">
+          <div class="fp-display">
+            <h4 style="color:${esc(f.color || '#fff')};">${esc(f.username)}</h4>
+            <div class="meta">${esc(f.message?.slice(0, 50) || '')} · ${new Date(f.date).toLocaleDateString('zh-CN')}</div>
+          </div>
+          <div class="fp-edit" style="display:none;padding:0.3rem 0;">
+            <input class="fp-edit-name" value="${esc(f.username||'')}" placeholder="昵称" style="width:100%;padding:0.2rem;margin-bottom:0.2rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;font-size:0.8rem;" />
+            <textarea class="fp-edit-msg" placeholder="留言" rows="2" style="width:100%;padding:0.2rem;margin-bottom:0.2rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;font-size:0.8rem;resize:vertical;font-family:inherit;">${esc(f.message||'')}</textarea>
+            <input class="fp-edit-color" value="${esc(f.color||'#ffffff')}" placeholder="颜色" style="width:100%;padding:0.2rem;margin-bottom:0.3rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;font-size:0.8rem;" />
+          </div>
+          <div class="actions">
+            <button class="edit-fp" data-id="${esc(f.id)}">编辑</button>
+            <button class="danger del-fp" data-id="${esc(f.id)}">删除</button>
+          </div>
         </div>
       `).join('');
       list.querySelectorAll('.del-fp').forEach(btn => {
@@ -825,6 +835,24 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
             const r = await fetch('/api/footprints', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: btn.dataset.id }) });
             if (r.ok) loadFootprintsAdmin(); else alert('失败');
           } catch (e) { alert('网络错误'); }
+        });
+      });
+      list.querySelectorAll('.edit-fp').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const item = btn.closest('.post-item');
+          const display = item.querySelector('.fp-display');
+          const edit = item.querySelector('.fp-edit');
+          if (edit.style.display === 'none') {
+            display.style.display = 'none'; edit.style.display = ''; btn.textContent = '保存'; btn.style.color = '#3fb950';
+          } else {
+            const name = item.querySelector('.fp-edit-name').value.trim();
+            const msg = item.querySelector('.fp-edit-msg').value.trim();
+            const color = item.querySelector('.fp-edit-color').value.trim();
+            fetch('/api/footprints', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: btn.dataset.id, username: name, message: msg, color }) })
+              .then(r => r.json()).then(r => {
+                if (r.success) { loadFootprintsAdmin(); } else { alert('保存失败'); }
+              });
+          }
         });
       });
     } catch (e) { list.innerHTML = '<p class="msg error">加载失败</p>'; }
