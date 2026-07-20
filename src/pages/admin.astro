@@ -820,7 +820,8 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
           <div class="fp-edit" style="display:none;padding:0.3rem 0;">
             <input class="fp-edit-name" value="${esc(f.username||'')}" placeholder="昵称" style="width:100%;padding:0.2rem;margin-bottom:0.2rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;font-size:0.8rem;" />
             <textarea class="fp-edit-msg" placeholder="留言" rows="2" style="width:100%;padding:0.2rem;margin-bottom:0.2rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;font-size:0.8rem;resize:vertical;font-family:inherit;">${esc(f.message||'')}</textarea>
-            <input class="fp-edit-color" value="${esc(f.color||'#ffffff')}" placeholder="颜色" style="width:100%;padding:0.2rem;margin-bottom:0.3rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;font-size:0.8rem;" />
+            <input class="fp-edit-color" value="${esc(f.color||'#ffffff')}" placeholder="颜色" style="width:100%;padding:0.2rem;margin-bottom:0.2rem;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:3px;font-size:0.8rem;" />
+            <input type="file" class="fp-edit-avatar" accept="image/*" style="color:#8b949e;font-size:0.75rem;margin-bottom:0.3rem;" />
           </div>
           <div class="actions">
             <button class="edit-fp" data-id="${esc(f.id)}">编辑</button>
@@ -848,7 +849,14 @@ const isLoggedIn = Astro.cookies.get('auth')?.value === 'funsh';
             const name = item.querySelector('.fp-edit-name').value.trim();
             const msg = item.querySelector('.fp-edit-msg').value.trim();
             const color = item.querySelector('.fp-edit-color').value.trim();
-            fetch('/api/footprints', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: btn.dataset.id, username: name, message: msg, color }) })
+            const avatarFile = item.querySelector('.fp-edit-avatar').files[0];
+            const fd = new FormData();
+            fd.append('id', btn.dataset.id);
+            if (name) fd.append('username', name);
+            if (msg) fd.append('message', msg);
+            if (color) fd.append('color', color);
+            if (avatarFile) fd.append('avatar', avatarFile);
+            fetch('/api/footprints', { method: 'PUT', body: fd })
               .then(r => r.json()).then(r => {
                 if (r.success) { loadFootprintsAdmin(); } else { alert('保存失败'); }
               });
