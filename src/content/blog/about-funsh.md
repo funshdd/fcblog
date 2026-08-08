@@ -3,7 +3,7 @@ title: "关于funsh的一切"
 date: 2026-07-13
 slug: "about-funsh"
 description: "虚幻与现实的交叉点，一步步还原出世界的真相"
-cover: "/about/mj.png"
+cover: "/covers/videos.png"
 tags: "自我介绍"
 author: "funsh"
 ---
